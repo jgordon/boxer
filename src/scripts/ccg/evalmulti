@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 import sys
 
@@ -178,10 +178,10 @@ while gsent:
 
   if seen_pos_error:
     pos_sent_error += 1
-    
+
   if seen_ccg_error:
     ccg_sent_error += 1
-    
+
   if seen_pos_error and seen_ccg_error:
     both_sent_error += 1
 
@@ -201,7 +201,7 @@ def report_pct(label, num, total):
   print label, '=',
   print '%s (%d/%d) instances' % (pct(num, total), num, total),
   print '%s (%d/%d) missed' % (pct(missed, total), missed, total)
-  
+
 def report(label, error, total):
   correct = total - error
   print label, '=',

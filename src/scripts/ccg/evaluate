@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # C&C NLP tools
 # Copyright (c) Universities of Edinburgh, Oxford and Sydney
 # Copyright (c) James R. Curran
@@ -115,7 +115,7 @@ def strip_markup(cat):
 
 def next_gold_lexcats(file):
   lexcats = []
-    
+
   line = file.readline()
   if not line:
     die("unexpected end of file reading gold standard lexical categories")
@@ -149,7 +149,7 @@ def next_test(file):
   deps = set()
   udeps = set()
   rule_ids = {}
-  
+
   line = file.readline()
   if not line:
     die("unexpected end of file reading gold dependencies")
@@ -192,7 +192,7 @@ def score_deps(gold_deps, test_deps, rule_ids, verbose, relations,
       print "correct: %s %s %s %s %s" % (dep + (rule_ids[dep],))
   if relations:
     for dep in correct:
-      correct_relations[dep[1:3]] = correct_relations.setdefault(dep[1:3], 0) + 1 
+      correct_relations[dep[1:3]] = correct_relations.setdefault(dep[1:3], 0) + 1
 
   incorrect = test_deps.difference(gold_deps)
   if verbose:
@@ -200,7 +200,7 @@ def score_deps(gold_deps, test_deps, rule_ids, verbose, relations,
       print "incorrect: %s %s %s %s %s" % (dep + (rule_ids[dep],))
   if relations:
     for dep in incorrect:
-      incorrect_relations[dep[1:3]] = incorrect_relations.setdefault(dep[1:3], 0) + 1 
+      incorrect_relations[dep[1:3]] = incorrect_relations.setdefault(dep[1:3], 0) + 1
 
   missing = gold_deps.difference(test_deps)
   if verbose:

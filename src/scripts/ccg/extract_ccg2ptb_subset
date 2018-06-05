@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 import sys
 import os
@@ -51,4 +51,3 @@ for input in FILENAMES:
   output = os.path.join(DIR, filename)
   print >> readme, ' ', input, "->", output
   extract(input, output, ids)
-
