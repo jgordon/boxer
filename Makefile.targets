@@ -91,7 +91,7 @@ CANDC_LIB = $(TRAIN_OBJS) $(CCG_OBJS) src/lib/tagger/pos.o src/lib/tagger/chunk.
   src/lib/candc.o src/lib/cluster_no_mpi.o
 
 all: $(PROGRAMS)
-soap: ext/bin/soapcpp2 $(SOAP_PROGRAMS)
+soap: $(SOAP_PROGRAMS)
 train: $(TRAIN_PROGRAMS)
 reg: ccg-regression
 

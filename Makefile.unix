@@ -27,7 +27,7 @@ LIBS = -Llib -lm -Lext/lib
 
 SOAP_INC = $(INC)
 SOAP_LIBS = $(LIBS) -lgsoap++
-SOAP_CPP = ext/bin/soapcpp2
+SOAP_CPP = soapcpp2
 SOAP_CXXFLAGS = $(CXXFLAGS) $(SOAP_INC)
 SOAP_LDFLAGS = $(LDFLAGS)
 
