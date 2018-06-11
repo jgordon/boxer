@@ -198,6 +198,7 @@ BOXER = src/prolog/boxer/alphaConversionDRT.pl \
         src/prolog/boxer/knowledge/dates.pl \
         src/prolog/boxer/knowledge/punctuation.pl \
         src/prolog/boxer/lex/determiners.pl \
+        src/prolog/boxer/lex/pp.pl \
         src/prolog/boxer/lex/n.pl \
         src/prolog/boxer/lex/tense.pl \
         src/prolog/boxer/lex/verbs.pl
