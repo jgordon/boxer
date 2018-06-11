@@ -1,4 +1,3 @@
-
 import colours
 import cfg
 from cat import Cat
@@ -229,7 +228,7 @@ class Node(object):
     raise NotImplemented
 
   def stags(self):
-    return ' '.join(['%s|%s|%s' % (l.t, l.pos, l.cat) for l in leaves(self)]) 
+    return ' '.join(['%s|%s|%s' % (l.t, l.pos, l.cat) for l in leaves(self)])
 
   def __repr__(self):
     return self._repr(cfg.SHOW_COLOUR and cfg.COLOUR, 0)
@@ -308,5 +307,3 @@ def leaves(root):
         stack.append(current.r)
       if current.l:
         stack.append(current.l)
-
-
