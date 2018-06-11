@@ -190,6 +190,7 @@ BOXER = src/prolog/boxer/alphaConversionDRT.pl \
         src/prolog/lib/options.pl \
         src/prolog/lib/drs2tacitus.pl \
         src/prolog/lib/drs2amr.pl \
+        src/prolog/boxer/knowledge/antecedent.pl \
         src/prolog/boxer/knowledge/ontology.pl \
         src/prolog/boxer/knowledge/relations.pl \
         src/prolog/boxer/knowledge/title.pl \
