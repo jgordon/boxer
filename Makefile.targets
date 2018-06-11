@@ -179,7 +179,7 @@ BOXER = src/prolog/boxer/alphaConversionDRT.pl \
         src/prolog/boxer/tuples.pl \
         src/prolog/boxer/closure.pl \
         src/prolog/boxer/transform.pl \
-		src/prolog/boxer/relation.pl \
+        src/prolog/boxer/relation.pl \
         src/prolog/boxer/xdrs2xml.pl \
         src/prolog/boxer/typechange.pl \
         src/prolog/boxer/vpe.pl \
@@ -189,6 +189,7 @@ BOXER = src/prolog/boxer/alphaConversionDRT.pl \
         src/prolog/lib/pdrs2drs.pl \
         src/prolog/lib/options.pl \
         src/prolog/lib/drs2tacitus.pl \
+        src/prolog/lib/drs2amr.pl \
         src/prolog/boxer/knowledge/ontology.pl \
         src/prolog/boxer/knowledge/relations.pl \
         src/prolog/boxer/knowledge/title.pl \
