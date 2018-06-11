@@ -168,6 +168,7 @@ BOXER = src/prolog/boxer/alphaConversionDRT.pl \
         src/prolog/boxer/output.pl \
         src/prolog/boxer/evaluation.pl \
         src/prolog/boxer/noncomp.pl \
+        src/prolog/boxer/morpha.pl \
         src/prolog/boxer/resolveDRT.pl \
         src/prolog/boxer/presupDRT.pl \
         src/prolog/boxer/printDrs.pl \
