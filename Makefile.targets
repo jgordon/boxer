@@ -179,6 +179,7 @@ BOXER = src/prolog/boxer/alphaConversionDRT.pl \
         src/prolog/boxer/tuples.pl \
         src/prolog/boxer/closure.pl \
         src/prolog/boxer/transform.pl \
+		src/prolog/boxer/relation.pl \
         src/prolog/boxer/xdrs2xml.pl \
         src/prolog/boxer/typechange.pl \
         src/prolog/boxer/vpe.pl \
