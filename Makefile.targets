@@ -179,6 +179,7 @@ BOXER = src/prolog/boxer/alphaConversionDRT.pl \
         src/prolog/boxer/tuples.pl \
         src/prolog/boxer/closure.pl \
         src/prolog/boxer/transform.pl \
+        src/prolog/boxer/relation.pl \
         src/prolog/boxer/xdrs2xml.pl \
         src/prolog/boxer/typechange.pl \
         src/prolog/boxer/vpe.pl \
@@ -188,6 +189,8 @@ BOXER = src/prolog/boxer/alphaConversionDRT.pl \
         src/prolog/lib/pdrs2drs.pl \
         src/prolog/lib/options.pl \
         src/prolog/lib/drs2tacitus.pl \
+        src/prolog/lib/drs2amr.pl \
+        src/prolog/boxer/knowledge/antecedent.pl \
         src/prolog/boxer/knowledge/ontology.pl \
         src/prolog/boxer/knowledge/relations.pl \
         src/prolog/boxer/knowledge/title.pl \
@@ -195,12 +198,14 @@ BOXER = src/prolog/boxer/alphaConversionDRT.pl \
         src/prolog/boxer/knowledge/dates.pl \
         src/prolog/boxer/knowledge/punctuation.pl \
         src/prolog/boxer/lex/determiners.pl \
+        src/prolog/boxer/lex/pp.pl \
+        src/prolog/boxer/lex/n.pl \
         src/prolog/boxer/lex/tense.pl \
         src/prolog/boxer/lex/verbs.pl
 
 bin/boxer: $(BOXER)
 	@mkdir -p bin working
-	$(PROLOG) -g "['src/prolog/boxer/boxer'], qsave_program('bin/boxer',[global=128000,local=128000,goal=start,stand_alone=true]), halt."
+	$(PROLOG) -g "['src/prolog/boxer/boxer'], qsave_program('bin/boxer',[global=128000,local=128000,goal=start,stand_alone=true,foreign=save]), halt."
 
 FETCH = wget
 
