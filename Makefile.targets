@@ -205,7 +205,7 @@ BOXER = src/prolog/boxer/alphaConversionDRT.pl \
 
 bin/boxer: $(BOXER)
 	@mkdir -p bin working
-	$(PROLOG) -g "['src/prolog/boxer/boxer'], qsave_program('bin/boxer',[global=128000,local=128000,goal=start,stand_alone=true]), halt."
+	$(PROLOG) -g "['src/prolog/boxer/boxer'], qsave_program('bin/boxer',[global=128000,local=128000,goal=start,stand_alone=true,foreign=save]), halt."
 
 FETCH = wget
 
