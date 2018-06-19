@@ -129,7 +129,7 @@ print_ant([Sym:Sense|L],Tok:Sense,Type,Stream):-
 print_ant([X:XS|L],Tok:Sense,Type,Stream):-
    symbol(Tok,Sym),
    format(Stream,'isnota~p(~q,~q,~q,~q).~n',[Type,Sym,Sense,X,XS]),
-   print_hyp(L,Tok:Sense,Type,Stream).
+   print_ant(L,Tok:Sense,Type,Stream).
 
 
 /* =========================================================================
