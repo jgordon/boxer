@@ -580,7 +580,8 @@ bk([_|L],F,N,In,Out):-
 mwn(Dir,AxiomsKT,AxiomsKH,AxiomsKTH,Novelty):-
    openInput(Dir),
    inputDRS(t,TDRS), computeMWN(TDRS,Dir,kt,DomT),  
-   axiomsWN(WNAxiomsKT), axiomsFN(TDRS,FNAxiomsKT), 
+   axiomsWN(WNAxiomsKT), 
+   axiomsFN(TDRS,FNAxiomsKT), 
    append(WNAxiomsKT,FNAxiomsKT,AxiomsKT),
    inputDRS(h,HDRS), computeMWN(HDRS,Dir,kh,DomH), 
    axiomsWN(WNAxiomsKH), axiomsFN(HDRS,FNAxiomsKH),

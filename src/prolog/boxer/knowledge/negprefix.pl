@@ -182,7 +182,6 @@ negprefix(a, inconclusive, in, conclusive).
 negprefix(a, asymmetrical, a, symmetrical).
 negprefix(a, unstatesmanlike, un, statesmanlike).
 negprefix(a, inextinguishable, in, extinguishable).
-negprefix(a, immediate, im, mediate).
 negprefix(a, unfair, un, fair).
 negprefix(a, displeased, dis, pleased).
 negprefix(a, unnatural, un, natural).
@@ -689,6 +688,7 @@ negprefix(a, undrinkable, un, drinkable).
 negprefix(a, unfree, un, free).
 negprefix(a, unrestricted, un, restricted).
 negprefix(a, nonexempt, non, exempt).
+negprefix(a, nonexecutive, non, executive).
 negprefix(a, uncomfortable, un, comfortable).
 negprefix(a, unconfined, un, confined).
 negprefix(a, discontinued, dis, continued).
