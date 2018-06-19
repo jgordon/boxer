@@ -30,6 +30,19 @@
 
 :- [working/wordnet/wordnet].
 
+%:- [working/wordnet/vanilla_train_s].
+%:- [working/wordnet/vanilla_train_l].
+%:- [working/wordnet/vanilla_train_xxxl].
+
+%:- [working/wordnet/vanilla_test_xl].
+
+%:- [working/wordnet/human_test].
+
+%:- [working/wordnet/elliesimple].
+%:- [working/wordnet/ellie_train].
+
+%:- [working/wordnet/combined].
+
 
 /* ========================================================================
     Declare Dynamic Predicates
@@ -37,7 +50,7 @@
 
 :- dynamic concept/2, % concept(Concept, ConceptId)
            isa/2,     % isa(ConceptId1, ConceptId2)
-           ant/2,     % ant(ConceptId1, ConceptId2)
+           isnota/2,  % isnota(ConceptId1, ConceptId2)
            word/5.    % word(Word,Cat,Sense,Freq,ConceptId),
 
 
@@ -55,7 +68,7 @@ minFreq(0).
 clearMWN:-  
    retractall(word(_,_,_,_,_)),
    retractall(isa(_,_)),
-   retractall(ant(_,_)),
+   retractall(isnota(_,_)),
    retractall(concept(_,_)).
 
 
@@ -237,14 +250,26 @@ selectConcepts([_|L]):-
 syn(n,Sym1,Sense1,Sym2,Sense2):-
    synn(Sym1,Sense1,Sym2,Sense2), !.    %%% WordNet (nouns)
 
+syn(n,Sym1,Sense1,Sym2,Sense2):-
+   synn(Sym2,Sense2,Sym1,Sense1), !.    %%% WordNet (nouns)
+
 syn(v,Sym1,Sense1,Sym2,Sense2):-
    synv(Sym1,Sense1,Sym2,Sense2), !.    %%% WordNet (verbs)
+
+syn(v,Sym1,Sense1,Sym2,Sense2):-
+   synv(Sym2,Sense2,Sym1,Sense1), !.    %%% WordNet (verbs)
 
 syn(a,Sym1,Sense1,Sym2,Sense2):-
    syna(Sym1,Sense1,Sym2,Sense2), !.    %%% WordNet (adjectives)
 
+syn(a,Sym1,Sense1,Sym2,Sense2):-
+   syna(Sym2,Sense2,Sym1,Sense1), !.    %%% WordNet (adjectives)
+
 syn(r,Sym1,Sense1,Sym2,Sense2):-
    synr(Sym1,Sense1,Sym2,Sense2), !.    %%% WordNet (adverbs)
+
+syn(r,Sym1,Sense1,Sym2,Sense2):-
+   synr(Sym2,Sense2,Sym1,Sense1), !.    %%% WordNet (adverbs)
 
 syn(per,Sym1,Sense1,Sym2,Sense2):-
    synp(Sym1,Sense1,Sym2,Sense2), !.    %%% WordNet (names)
@@ -343,11 +368,25 @@ compISA([s(_,per,_,ID1)|L]):-            % person not in WordNet
    Nouns
 ------------------------------------------------------------------------ */
 
-compISA([s(Sym1,n,Sense1,ID1)|L]):-      % nouns in WordNet
-   isan(Sym1,Sense1,Sym2,Sense2), !,
-   addConcept(Sym2,n,Sense2,ID2),
-   assert(isa(ID1,ID2)),
-   compISA([s(Sym2,n,Sense2,ID2)|L]).
+% take all isa relations
+%
+compISA([s(Sym1,n,Sense1,ID1)|L1]):-      % nouns in WordNet
+%   option('--x',true),
+   findall(s(Sym2,n,Sense2,ID2),( isan(Sym1,Sense1,Sym2,Sense2),
+                                  addConcept(Sym2,n,Sense2,ID2),
+                                  assert(isa(ID1,ID2)) ), New),
+   New = [_|_], !,
+   append(New,L1,L2),
+   compISA(L2).
+
+% take only first isa relation
+%
+%compISA([s(Sym1,n,Sense1,ID1)|L]):-      % nouns in WordNet
+%   option('--x',false),
+%   isan(Sym1,Sense1,Sym2,Sense2), !,
+%   addConcept(Sym2,n,Sense2,ID2),
+%   assert(isa(ID1,ID2)),
+%   compISA([s(Sym2,n,Sense2,ID2)|L]).
 
 /* ------------------------------------------------------------------------
    Verbs
@@ -397,7 +436,7 @@ compISNOTA([]).
 compISNOTA([s(Sym1,a,Sense1,ID1)|L]):-    
    isnotaa(Sym1,Sense1,Sym2,Sense2), 
    member(s(Sym2,a,Sense2,ID2),L), !,
-   assert(ant(ID1,ID2)),
+   assert(isnota(ID1,ID2)),
    compISNOTA(L).
 
 compISNOTA([_|L]):-    
@@ -423,15 +462,18 @@ getConceptId(1).
 axiomsWN(Axioms):-
    option('--modal',false), !,
    findall(isa(A,B),(isa(A,B),\+A=B,\+B=0),ISA),
-   findall(isnota(A,B),(isa(A,C), concept([s(_,T,_)|_],A),
-                        isa(B,C), concept([s(_,T,_)|_],B),
-                        A<B       ),ISNOTA),
+
+   findall(isnota(A,B),isnota(A,B),ISNOTA),
+%  co-hyponyms
+%   findall(isnota(A,B),(isa(A,C), concept([s(_,T,_)|_],A),
+%                        isa(B,C), concept([s(_,T,_)|_],B),
+%                        A<B       ),ISNOTA),
+
    append(ISA,ISNOTA,Ax1),
    findall(iseq(A,B),(concept([A|L],Id1),
                       member(B,L),
                       \+ (concept(Other,Id2), \+ Id1=Id2, member(B,Other))),ISEQ),
    append(ISEQ,Ax1,Ax2),
-%  findall(antonym(A,B),(concept(
    axiomsWN(Ax2,Axioms).
 
 axiomsWN(Axioms):-
@@ -791,9 +833,9 @@ printTerminals(Stream):-
    fail.
 
 printTerminals(Stream):-
-   format(Stream,'%~n% ant(+ConceptID, +ConceptID).~n%~n',[]),
-   ant(I,J),
-   format(Stream,'~p.~n',[ant(I,J)]),
+   format(Stream,'%~n% isnota(+ConceptID, +ConceptID).~n%~n',[]),
+   isnota(I,J),
+   format(Stream,'~p.~n',[isnota(I,J)]),
    fail.
 
 printTerminals(_).
