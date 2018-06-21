@@ -361,7 +361,7 @@ symbol(Type,F1,0,F2):- !, symbol(Type,F1,1,F2).    % WSD (first sense)
 
 symbol(Type,F1,Sense,F2):-
    atom_codes(Type,A0), 
-   number_codes(Sense,A1),
+   ( number(Sense), !, number_codes(Sense,A1); atom_codes(Sense,A1) ),
    append(A0,A1,A2),
    ( atom(F1),  !, atom_codes(F1,A3)   
    ; number(F1), number_codes(F1,A3) ),
