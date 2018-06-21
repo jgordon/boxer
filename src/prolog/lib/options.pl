@@ -30,7 +30,8 @@ setOption(P,Option,Value):-
 
 parseOptions(P,Arg):-
    opts(P,Options,Arg,[]), !,
-   assertOptions(P,Options).
+   assertOptions(P,Options),
+   dependentOptions(P).
 
 
 /* =======================================================================
@@ -69,6 +70,26 @@ isInteger([X|L],Old,Int):-
    X > 47, X < 58, !,
    New is (Old*10)+(X-48),
    isInteger(L,New,Int).
+
+
+/* =======================================================================
+   Dependent Options
+========================================================================*/
+
+dependentOptions(P):-
+   findall(ifthen(A,B,C,D),dep(P,A,B,C,D),L),
+   dependentOptions(L,P).
+
+dependentOptions([],_):- !.
+
+dependentOptions([ifthen(A,B,C,D)|L],P):-
+   option(A,B), !, 
+   setOption(P,C,D),
+   dependentOptions(L,P).
+
+dependentOptions([_|L],P):-
+   dependentOptions(L,P).
+
 
 
 /* =======================================================================
@@ -139,13 +160,13 @@ setDefaultOptions([X|L],P):-
 ========================================================================*/
 
 showOptions(P):-  
-   ( setof(O,V^D^(option(P,O,0,V,D),format(user_error,'  ~p~n',[O])),_), !; true ),
-   ( setof(O,V^D^(option(P,O,-1,V,D),format(user_error,'  ~p <file>~n',[O])),_), !; true ), 
-   ( setof(O,V^D^(option(P,O,-2,V,D),format(user_error,'  ~p <integer> (default: ~p)~n',[O,D])),_), !; true ),
+   ( setof(O,V^D^(option(P,O,0,V,D),format(user_error,'  ~w~n',[O])),_), !; true ),
+   ( setof(O,V^D^(option(P,O,-1,V,D),format(user_error,'  ~w <file>~n',[O])),_), !; true ), 
+   ( setof(O,V^D^(option(P,O,-2,V,D),format(user_error,'  ~w <integer> (default: ~p)~n',[O,D])),_), !; true ),
    ( setof(o(O,D),V^option(P,O,1,V,D),Options), !; true ),
    findall(_,( member(o(O,D),Options),
                findall(V,option(P,O,1,V,_),L),
-               format(user_error,'  ~p <arg> (possible values: ~p, default: ~p)~n',[O,L,D])),_), 
+               format(user_error,'  ~w <arg> (possible values: ~w, default: ~w)~n',[O,L,D])),_), 
    nl(user_error).
 
 
@@ -220,10 +241,21 @@ option( boxer, '--plural',     1, V, false      ):- member(V,[true,false]).
 option( boxer, '--x',          1, V, false      ):- member(V,[true,false]).
 option( boxer, '--copula',     1, V, true       ):- member(V,[true,false]).
 option( boxer, '--tokid',      1, V, local      ):- member(V,[local,global]).
-option( boxer, '--presup',     1, V, max        ):- member(V,[min,max]).
+option( boxer, '--mwe',        1, V, no         ):- member(V,[no,yes,all]).
+%option( boxer, '--presup',     1, V, max        ):- member(V,[min,max]).
 option( boxer, '--theory',     1, V, drt        ):- member(V,[drt,sdrt]).
 option( boxer, '--roles',      1, V, proto      ):- member(V,[proto,verbnet]).  % ,framenet]).
 option( boxer, '--format',     1, V, prolog     ):- member(V,[prolog,xml,latex,dot,no]).
-option( boxer, '--semantics',  1, V, drs        ):- member(V,[drs,pdrs,fol,drg,tacitus,der]).
+option( boxer, '--semantics',  1, V, drs        ):- member(V,[drs,pdrs,fol,drg,amr,tacitus,der]).
 option( boxer, '--input',     -1, _, user_input ).
 option( boxer, '--output',    -1, _, user_output).
+
+
+/* =======================================================================
+   Dependent Options         % if O1:V1 then set O2:V2
+========================================================================*/
+
+dep(boxer, '--semantics',amr, '--elimeq',true). 
+dep(boxer, '--semantics',amr, '--copula',false). 
+dep(boxer, '--semantics',amr, '--modal',true). 
+dep(boxer, '--semantics',amr, '--theory',sdrt). 

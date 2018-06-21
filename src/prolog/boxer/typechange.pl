@@ -10,7 +10,6 @@
 
 
 /* -------------------------------------------------------------------------
-
    This file contains the rules for the phenomenon called 'type
    changing' (not to be confused with type raising). These are called
    "lexical rules" in CCGbank. They are unary type changing rules that
@@ -22,7 +21,6 @@
    will get its own semantic interpretation. Often, a type-changing
    rule corresponds to ellipsis. In the comments below, the elided
    phrases are indicated by square brackets.
-
 ------------------------------------------------------------------------- */
 
 % Ex: a company [that is] based in ...

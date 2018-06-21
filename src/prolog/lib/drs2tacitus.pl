@@ -114,6 +114,9 @@ conds2tac([Cond|L],P,Roles,T1,T3,N1-N3,Heads,Head):-
 ======================================================================== */
 
 pickHead(Heads,Event):- 
+   member(closing:_:Event,Heads), !.
+
+pickHead(Heads,Event):- 
    member(event:[I]:Event,Heads),
    \+ (member(event:[J]:_,Heads), J < I), !.
 
@@ -143,7 +146,7 @@ adjustMods(_,T,T).
 ======================================================================== */
 
 roles([],[],[]).
-roles([_:R|L1],[R|Roles],L2):- R = rel(_,_,Role,_), member(Role,[topic,agent,patient,theme,recipient]), !, roles(L1,Roles,L2).
+roles([_:R|L1],[R|Roles],L2):- R = rel(_,_,Role,_), member(Role,[experiencer,topic,agent,patient,theme,recipient]), !, roles(L1,Roles,L2).
 roles([Cond|L1],Roles,[Cond|L2]):- roles(L1,Roles,L2).
 
 
@@ -204,6 +207,8 @@ cond2tac(I:timex(X,D1),_,_,T,[I:F|T],N1-N2,timex:I:E):-
 
 cond2tac(I:eq(X,Y),_,_,T,[I:equal(E,X,Y)|T],N1-N2,equal:I:E):- !,
    label(N1,e,E,N2).      
+
+cond2tac(I:pred(X,closing,v,99),_,_,T,T,N-N,closing:I:X):- !.
 
 cond2tac(I:pred(X,S1,r,_),L,_,T,[I:F|T],N1-N2,mod:I:E):- !,
    pos(I,L,Pos),
@@ -275,24 +280,24 @@ addRoles([rel(E,X,agent,0)|L],E,F,N):-
    F =.. [_,E,X,_,_], !,
    addRoles(L,E,F,N).
 
-addRoles([rel(E,X,topic,0)|L],E,F,N):-
-   F =.. [_,E,X,_,_], !,
-   addRoles(L,E,F,N).
-
 addRoles([rel(E,X,patient,0)|L],E,F,N):-
    F =.. [_,E,_,X,_], !,
    addRoles(L,E,F,N).
 
-addRoles([rel(E,X,theme,0)|L],E,F,N):-
+addRoles([rel(E,X,recipient,0)|L],E,F,N):-
    F =.. [_,E,_,X,_], !,
    addRoles(L,E,F,N).
 
-addRoles([rel(E,X,recipient,0)|L],E,F,N):-
+addRoles([rel(E,X,topic,0)|L],E,F,N):-
+   F =.. [_,E,_,_,X], !,
+   addRoles(L,E,F,N).
+
+addRoles([rel(E,X,theme,0)|L],E,F,N):-
    F =.. [_,E,_,_,X], !,
    addRoles(L,E,F,N).
 
 addRoles([rel(E,X,Role,0)|L],E,F,N):-
-   member(Role,[topic,agent,patient,theme,recipient]),
+   member(Role,[experiencer,topic,agent,patient,theme,recipient]),
    F =.. [_,E,X], !,
    addRoles(L,E,F,N).
 
