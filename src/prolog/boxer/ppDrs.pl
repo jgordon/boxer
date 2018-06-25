@@ -1,11 +1,13 @@
 
 :- module(ppDrs,[ppDrs/3]).
 
-:- use_module(library(lists),[member/2,append/3,select/3,reverse/2]).
-:- use_module(boxer(alphaConversionDRT),[alphaConvertDRS/2]).
-:- use_module(semlib(options),[option/2]).
-:- use_module(knowledge(title),[title/1]).
-:- use_module(boxer(noncomp),[noncomp/2]).
+:- use_module(library(lists),[member/2,append/3,select/3]).
+
+:- [titles].
+
+:- use_module(string2digit,[string2digit/2]).
+
+:- use_module(alphaConversionDRT,[alphaConvertDRS/2]).
 
 
 /*========================================================================
@@ -21,9 +23,7 @@ counter(0).
    Postprocessing XDRSs
 ========================================================================*/
 
-ppDrs(X,_,X):- !.
-
-ppDrs(xdrs(W1,P,E,A1),Context,xdrs(W2,P,E,A3)):-
+ppDrs(xdrs(W1,P,E,A1),Context,xdrs(W2,P,E,A3)):- !,
    ppWords(W1,0,W2,W3),
    numbervars(A1,0,Counter),
    retractall(counter(_)),
@@ -77,7 +77,12 @@ ppConds(drs([],[I:or(A1,A2)|Conds1]),P,E,W,C,CD1-CD3,drs(D2,[I:or(A3,A4)|Conds2]
    ppDrs(A2,P,E,W,C,CD1-_,A4),
    ppConds(drs([],Conds1),P,E,W,C,CD1-CD3,drs(D2,Conds2)).
 
-ppConds(drs([],[I:duplex(Type,A1,Var,A2)|Conds1]),P,E,W,C,CD1-CD3,drs(D2,[I:duplex(Type,A3,Var,A4)|Conds2])):- !,
+ppConds(drs([],[I:whq(A1,A2)|Conds1]),P,E,W,C,CD1-CD3,drs(D2,[I:whq(A3,A4)|Conds2])):- !,
+   ppDrs(A1,P,E,W,C,CD1-CD2,A3),
+   ppDrs(A2,P,E,W,C,CD2-_,A4),
+   ppConds(drs([],Conds1),P,E,W,C,CD1-CD3,drs(D2,Conds2)).
+
+ppConds(drs([],[I:whq(Type,A1,Var,A2)|Conds1]),P,E,W,C,CD1-CD3,drs(D2,[I:whq(Type,A3,Var,A4)|Conds2])):- !,
    ppDrs(A1,P,E,W,C,CD1-CD2,A3),
    ppDrs(A2,P,E,W,C,CD2-_,A4),
    ppConds(drs([],Conds1),P,E,W,C,CD1-CD3,drs(D2,Conds2)).
@@ -86,17 +91,18 @@ ppConds(drs([],[I:not(A1)|Conds1]),P,E,W,C,CD1-CD3,drs(D2,[I:not(A2)|Conds2])):-
    ppDrs(A1,P,E,W,C,CD1-_,A2),
    ppConds(drs([],Conds1),P,E,W,C,CD1-CD3,drs(D2,Conds2)).
 
-ppConds(drs([],[I:nec(A1)|Conds1]),P,E,W,C,CD1-CD3,drs(D2,[I:nec(A2)|Conds2])):- !,
-   ppDrs(A1,P,E,W,C,CD1-_,A2),
-   ppConds(drs([],Conds1),P,E,W,C,CD1-CD3,drs(D2,Conds2)).
-
-ppConds(drs([],[I:pos(A1)|Conds1]),P,E,W,C,CD1-CD3,drs(D2,[I:pos(A2)|Conds2])):- !,
-   ppDrs(A1,P,E,W,C,CD1-_,A2),
-   ppConds(drs([],Conds1),P,E,W,C,CD1-CD3,drs(D2,Conds2)).
-
 ppConds(drs([],[I:prop(X,A1)|Conds1]),P,E,W,C,CD1-CD3,drs(D2,[I:prop(X,A2)|Conds2])):- !,
    ppDrs(A1,P,E,W,C,CD1-_,A2),
    ppConds(drs([],Conds1),P,E,W,C,CD1-CD3,drs(D2,Conds2)).
+
+
+/*========================================================================
+   Merge DRSs
+========================================================================*/
+
+mergeDrs(drs(D1,C1),drs(D2,C2),drs(D3,C3)):-
+   append(D1,D2,D3),
+   append(C1,C2,C3).
 
 
 /*========================================================================
@@ -197,34 +203,6 @@ checkConstraints([current_year(Year)|L],P,N,W,Context):- !,
    member(year:Year,Context), !,
    checkConstraints(L,P,N,W,Context).
 
-checkConstraints([length_word(Index,Len)|L],P,N,W,Context):- !,
-   member(word(Index,Word,_,_),W), !,
-   atom_chars(Word,Chars), 
-   length(Chars,Len),
-   checkConstraints(L,P,N,W,Context).
-
-checkConstraints([next_year(NextYear)|L],P,N,W,Context):- !,
-   member(year:Year,Context), 
-   nextYear(Year,NextYear),
-   checkConstraints(L,P,N,W,Context).
-
-checkConstraints([last_year(LastYear)|L],P,N,W,Context):- !,
-   member(year:Year,Context), 
-   lastYear(Year,LastYear),
-   checkConstraints(L,P,N,W,Context).
-
-checkConstraints([next_month(NextMonth,NextYear)|L],P,N,W,Context):- !,
-   member(month:Month,Context),
-   member(year:Year,Context),
-   nextMonth(Month:Year,NextMonth:NextYear),
-   checkConstraints(L,P,N,W,Context).
-
-checkConstraints([last_month(LastMonth,LastYear)|L],P,N,W,Context):- !,
-   member(month:Month,Context),
-   member(year:Year,Context),
-   lastMonth(Month:Year,LastMonth:LastYear),
-   checkConstraints(L,P,N,W,Context).
-
 checkConstraints([current_month(Month)|L],P,N,W,Context):- !,
    member(month:Month,Context), !,
    checkConstraints(L,P,N,W,Context).
@@ -236,52 +214,6 @@ checkConstraints([current_day(Day)|L],P,N,W,Context):- !,
 checkConstraints([C|L],P,N,W,Context):- 
    call(ppDrs:C),
    checkConstraints(L,P,N,W,Context).
-
-
-/* ------------------------------------------------------------------------------
-   Next
------------------------------------------------------------------------------- */
-
-nextYear(Year,NextYear):-
-   atom_number(Year,Y),
-   NextY is Y + 1,
-   atom_number(NextYear,NextY).
-
-nextMonth('01':Year, '02':Year):- !.
-nextMonth('02':Year, '03':Year):- !.
-nextMonth('03':Year, '04':Year):- !.
-nextMonth('04':Year, '05':Year):- !.
-nextMonth('05':Year, '06':Year):- !.
-nextMonth('06':Year, '07':Year):- !.
-nextMonth('07':Year, '08':Year):- !.
-nextMonth('08':Year, '09':Year):- !.
-nextMonth('09':Year, '10':Year):- !.
-nextMonth('10':Year, '11':Year):- !.
-nextMonth('11':Year, '12':Year):- !.
-nextMonth('12':Year, '01':NextYear):- !, nextYear(Year,NextYear).
-
-
-/* ------------------------------------------------------------------------------
-   Last
------------------------------------------------------------------------------- */
-
-lastYear(Year,LastYear):-
-   atom_number(Year,Y),
-   LastY is Y - 1,
-   atom_number(LastYear,LastY).
-
-lastMonth('01':Year, '12':LastYear):- !, lastYear(Year,LastYear).
-lastMonth('02':Year, '01':Year):- !.
-lastMonth('03':Year, '02':Year):- !.
-lastMonth('04':Year, '03':Year):- !.
-lastMonth('05':Year, '04':Year):- !.
-lastMonth('06':Year, '05':Year):- !.
-lastMonth('07':Year, '06':Year):- !.
-lastMonth('08':Year, '07':Year):- !.
-lastMonth('09':Year, '08':Year):- !.
-lastMonth('10':Year, '09':Year):- !.
-lastMonth('11':Year, '10':Year):- !.
-lastMonth('12':Year, '11':Year):- !.
 
 
 /* ------------------------------------------------------------------------------
@@ -301,26 +233,19 @@ rule(drs([],[]),
 ------------------------------------------------------------------------------ */
 
 rule(drs([],[]),
-     drs([],[I:pred(X,Sym,a,0)]),
+     drs([],[I:pred(X,Sym,_,Sense)]),
 
      [ quoted(Sym) ],
 
-     drs([],[I:named(X,Sym,quo,0)])).
-
-rule(drs([],[]),
-     drs([],[I:pred(X,Sym,n,0)]),
-
-     [ quoted(Sym) ],
-
-     drs([],[I:named(X,Sym,quo,0)])).
+     drs([],[I:named(X,Sym,quo,Sense)])).
 
 
 rule(drs([],[]),
-     drs([],[I:named(X,Sym,nam,0)]),
+     drs([],[I:named(X,Sym,nam,Sense)]),
 
      [ quoted(Sym) ],
 
-     drs([],[I:named(X,Sym,quo,0)])).
+     drs([],[I:named(X,Sym,quo,Sense)])).
 
 
 /* ------------------------------------------------------------------------------
@@ -365,7 +290,7 @@ rule(drs([],[]),
 rule(drs([],[]),
      drs([],[I:named(X,Title,nam,Sense1),J:named(X,Sym,Type,Sense2)]),
 
-     [ title(Title),
+     [ title(Title,_),
        adjacent(I,J,_) ],
 
      drs([],[I:named(X,Title,ttl,Sense1),J:named(X,Sym,Type,Sense2)])).
@@ -406,6 +331,7 @@ rule(drs([],[]),
 
 /* ------------------------------------------------------------------------------
    Proper Names (refining sorts)
+------------------------------------------------------------------------------ */
 
 rule(drs([],[]),
      drs([],[[I]:named(X,Sym,nam,Sense)]),
@@ -427,7 +353,6 @@ rule(drs([],[]),
      [ ne(I,['I-LOC','B-LOC','I-LOCATION']) ],
 
      drs([],[[I]:named(X,Sym,loc,Sense)])).
------------------------------------------------------------------------------- */
 
 
 /* ------------------------------------------------------------------------------
@@ -445,6 +370,7 @@ rule(drs([],[]),
 
 /* ------------------------------------------------------------------------------
    Compound numeral expressions  (e.g. "12 million")
+------------------------------------------------------------------------------ */
 
 rule(drs([],[]),
      drs([],[[I]:card(X,Num1,Type),[J]:card(X,1000000,Type)]),
@@ -453,12 +379,11 @@ rule(drs([],[]),
        Num2 is integer(1000000 * Num1) ],
 
      drs([],[[I,J]:card(X,Num2,Type)])).
------------------------------------------------------------------------------- */
 
 
 /* ------------------------------------------------------------------------------
    Compound numeral expressions  (e.g. "7 thousand")
-
+------------------------------------------------------------------------------ */
 
 rule(drs([],[]),
      drs([],[[I]:card(X,Num1,Type),[J]:card(X,1000,Type)]),
@@ -467,7 +392,7 @@ rule(drs([],[]),
        Num2 is integer(1000 * Num1) ],
 
      drs([],[[I,J]:card(X,Num2,Type)])).
------------------------------------------------------------------------------- */
+
 
 /* ------------------------------------------------------------------------------
    Compound numeral expressions  (e.g. "four feet ten inches")
@@ -527,6 +452,7 @@ rule(drs([],[]),
 
      drs([],[[I,J,L,K]:timex(X,date([]:'+',[K]:YID,[I]:MID,[J]:DID))])).
 
+
 /* ------------------------------------------------------------------------------
    Clocktime expressions (e.g. "at 4 : 30 pm")
 ------------------------------------------------------------------------------ */
@@ -534,7 +460,7 @@ rule(drs([],[]),
 rule(drs([],[]),
      drs([],[[I]:card(X,Hour,ge),[I]:pred(X,thing,n,12),[J]:rel(X,Y,':',_),[K]:card(Y,Minutes,ge),[L]:pred(Y,AMPM,n,_)]),
  
-     [ member(AMPM,[am,pm,'a.m.','p.m.']),
+     [ member(AMPM,[am,pm]),
        hour(Hour,AMPM,HourID),
        minute(Minutes,MinID) ],
 
@@ -561,7 +487,7 @@ rule(drs([],[_:rel(_,X,at,_)]),
 ------------------------------------------------------------------------------ */
 
 rule(drs([],[]),
-     drs([],[[I]:card(X,Time,ge),[J]:pred(X,gmt,n,_)]),
+     drs([],[[I]:card(X,Time,ge),[J]:pred(X,gme,n,_)]),
 
      [ gmt(Time,Hour,Minute),
        J is I + 1 ],
@@ -687,7 +613,7 @@ rule(drs([],[]),
 rule(drs([],[]),
      drs([],[[I]:card(X,Year,ge),[J]:named(X,BC,_,_)]),
 
-     [ yearBC(BC),
+     [ member(BC,[bc,bce]),
        number(Year), 
        year(Year,YearFormatted),
        J is I + 1 ],
@@ -697,7 +623,7 @@ rule(drs([],[]),
 rule(drs([],[]),
      drs([],[[I]:card(X,Year,ge),[J]:pred(X,BC,n,_)]),
 
-     [ yearBC(BC),
+     [ member(BC,[bc,bce]),
        number(Year), 
        year(Year,YearFormatted),
        J is I + 1 ],
@@ -712,7 +638,7 @@ rule(drs([],[]),
 rule(drs([],[]),
      drs([],[[I]:card(X,Year,ge),[J]:named(X,AD,_,_)]),
 
-     [ yearAD(AD),
+     [ member(AD,[ad,ce]),
        number(Year), 
        year(Year,YearFormatted),
        J is I + 1 ],
@@ -722,7 +648,7 @@ rule(drs([],[]),
 rule(drs([],[]),
      drs([],[[I]:card(X,Year,ge),[J]:pred(X,AD,n,_)]),
 
-     [ yearAD(AD),
+     [ member(AD,[ad,ce]),
        number(Year), 
        year(Year,YearFormatted),
        J is I + 1 ],
@@ -732,7 +658,7 @@ rule(drs([],[]),
 rule(drs([],[]),
      drs([],[[I]:named(X,AD,_,_),[J]:card(X,Year,ge)]),
 
-     [ yearAD(AD),
+     [ member(AD,[ad,ce]),
        number(Year), 
        year(Year,YearFormatted),
        J is I + 1 ],
@@ -742,7 +668,7 @@ rule(drs([],[]),
 rule(drs([],[]),
      drs([],[[I]:pred(X,AD,n,_),[J]:card(X,Year,ge)]),
 
-     [ yearAD(AD),
+     [ member(AD,[ad,ce]),
        number(Year), 
        year(Year,YearFormatted),
        J is I + 1 ],
@@ -767,7 +693,7 @@ rule(drs([],[]),
 
 
 /* ------------------------------------------------------------------------------
-   Date expressions (e.g. "in/by/to/from 1992")
+   Date expressions (e.g. "in/by/for/to/from 1992")
 ------------------------------------------------------------------------------ */
 
 rule(drs([],[[J]:rel(_,X,_,_)]),
@@ -775,7 +701,6 @@ rule(drs([],[[J]:rel(_,X,_,_)]),
 
      [ number(Year), 
        Year > 1000, Year < 2100,
-       length_word(I,4),
        year(Year,YID),
        I is J + 1 ],
 
@@ -843,7 +768,7 @@ rule(drs([],[]),
 ------------------------------------------------------------------------------ */
 
 rule(drs([],[]),
-     drs([_:Y],[[L]:timex(X,date([]:'+',[L]:Year,[]:_,[]:_)),[I,J]:timex(Y,date([]:'+',[]:_,[I]:Month,[J]:Day)),[L]:rel(E,X,rel,0),_:rel(E,Y,rel,0)]),
+     drs([],[[L]:timex(X,date([]:'+',[L]:Year,[]:_,[]:_)),[I,J]:timex(Y,date([]:'+',[]:_,[I]:Month,[J]:Day)),[L]:rel(E,X,rel,0),_:rel(E,Y,rel,0)]),
 
      [ J is I + 1,
        K is J + 1,
@@ -853,102 +778,25 @@ rule(drs([],[]),
 
 
 /* ------------------------------------------------------------------------------
-   Indirect time expressions: today
------------------------------------------------------------------------------- */
-
-rule(drs([],[]),
-     drs([],[I:pred(X,today,n,_)]),
-
-     [ current_year(Year),
-       current_month(Month),
-       current_day(Day) ],
-
-     drs([],[I:timex(X,date([]:'+',[]:Year,[]:Month,[]:Day))])).
-
-
-/* ------------------------------------------------------------------------------
-   Indirect time expressions: next/last/this year/month
------------------------------------------------------------------------------- */
-
-rule(drs([],[]),
-     drs([],[[I]:pred(X,current,a,1),[J]:pred(X,year,n,_)]),
-
-     [ current_year(Year) ],
-
-     drs([],[[I,J]:timex(X,date([]:'+',[]:Year,[]:'XX',[]:'XX'))])).
-
-rule(drs([],[]),
-     drs([],[[I]:pred(X,next,a,_),[J]:pred(X,year,n,_)]),
-
-     [ next_year(Year) ],
-
-     drs([],[[I,J]:timex(X,date([]:'+',[]:Year,[]:'XX',[]:'XX'))])).
-
-rule(drs([],[]),
-     drs([],[[I]:pred(X,current,a,1),[J]:pred(X,month,n,_)]),
-
-     [ current_month(Month), 
-       current_year(Year) ],
-
-     drs([],[[I,J]:timex(X,date([]:'+',[]:Year,[]:Month,[]:'XX'))])).
-
-rule(drs([],[_:pred(E,event,n,_),_:rel(E,X,rel,0)]),
-     drs([],[[I]:pred(E,next,a,_),[J]:pred(X,month,n,_)]),
-
-     [ next_month(Month,Year) ],
-
-     drs([],[[I,J]:timex(X,date([]:'+',[]:Year,[]:Month,[]:'XX'))])).
-
-rule(drs([],[_:pred(E,event,n,_),_:rel(E,X,rel,0)]),
-     drs([],[[I]:pred(E,last,a,_),[J]:pred(X,month,n,_)]),
-
-     [ last_month(Month,Year) ],
-
-     drs([],[[I,J]:timex(X,date([]:'+',[]:Year,[]:Month,[]:'XX'))])).
-
-rule(drs([],[_:pred(E,event,n,_),_:rel(E,X,rel,0)]),
-     drs([],[[I]:pred(E,last,a,_),[J]:pred(X,year,n,_)]),
-
-     [ last_year(Year) ],
-
-     drs([],[[I,J]:timex(X,date([]:'+',[]:Year,[]:'XX',[]:'XX'))])).
-
-rule(drs([],[_:pred(E,event,n,_),_:rel(E,X,rel,0)]),
-     drs([],[[I]:pred(E,next,a,_),[J]:pred(X,year,n,_)]),
-
-     [ next_year(Year) ],
-
-     drs([],[[I,J]:timex(X,date([]:'+',[]:Year,[]:'XX',[]:'XX'))])).
-
-
-/* ------------------------------------------------------------------------------
    Date expressions (implicit year)
 ------------------------------------------------------------------------------ */
 
-rule(drs([],[_:rel(E,X,_,_),_:pred(E,future,a,1)]),
-     drs([],[I1:timex(X,date([]:'+',[]:'XXXX',I2:Month,Day))]),
-
-     [ current_year(CurrentYear),
-       current_month(CurrentMonth),
-       \+ Month='XX',
-       nextyofm(CurrentMonth,Month,CurrentYear,Year) ],
-
-     drs([],[I1:timex(X,date([]:'+',[]:Year,I2:Month,Day))])).
-
-rule(drs([],[_:rel(E,X,_,_),_:pred(E,past,a,1)]),
+rule(drs([],[]),
      drs([],[I:timex(X,date([]:'+',[]:'XXXX',MI:Month,Day))]),
 
      [ current_year(CurrentYear),
        current_month(CurrentMonth),
        current_day(CurrentDay),
+       %%% Assuming verb is in past tense
        earlier_doy(doy(Month,Day),doy(CurrentMonth,CurrentDay)) ],
 
      drs([],[I:timex(X,date([]:'+',[]:CurrentYear,MI:Month,Day))])).
 
-rule(drs([],[_:rel(E,X,_,_),_:pred(E,past,a,1)]),
+rule(drs([],[]),
      drs([],[I:timex(X,date([]:'+',[]:'XXXX',Month,Day))]),
 
      [ current_year(CurrentYear),
+       %%% Assuming verb is in past tense
        last_year(CurrentYear,LastYear) ],
 
      drs([],[I:timex(X,date([]:'+',[]:LastYear,Month,Day))])).
@@ -1004,7 +852,7 @@ rule(drs([],[]),
 
      [ member(Type,[org,loc]),
        adjacent(I,J,K),
-       concat_atom([Sym1,Sym2],'_',Sym) ],
+       combineSym(Sym1,Sym2,Sym) ],
 
      drs([],[K:named(X,Sym,Type,Sense)])).
 
@@ -1013,7 +861,7 @@ rule(drs([],[]),
 
      [ member(Type,[org,loc]),
        adjacent(I,J,K),
-       concat_atom([Sym1,Sym2],'_',Sym) ],
+       combineSym(Sym1,Sym2,Sym) ],
 
      drs([],[K:named(X,Sym,Type,Sense)])).
 
@@ -1022,7 +870,7 @@ rule(drs([],[]),
 
      [ member(Type,[org,loc,nam]),
        adjacent(I,J,K),
-       concat_atom([Sym1,Sym2],'_',Sym) ],
+       combineSym(Sym1,Sym2,Sym) ],
 
      drs([],[K:named(X,Sym,Type,Sense)])).
 
@@ -1061,13 +909,11 @@ rule(drs([],[J:pred(X,_,a,_),K:pred(X,_,n,_)]),
    NN compounds: PN + NOUN + NOUN
 ------------------------------------------------------------------------------ */
 
-rule(drs([],[J:pred(X,Sym,n,_)]),
+rule(drs([],[J:pred(X,_,n,_)]),
      drs([],[H:named(X,Sym0,Type,Sense),I:pred(X,Sym1,n,Sense1)]),
 
      [ adjacent(H,I,_),
        adjacent(I,J,_),  
-       \+ member(Sym,[quantity,amount]),
-       \+ member(Sym1,[quantity,amount]),
        newref(New1),
        newref(New2) ],
 
@@ -1079,13 +925,11 @@ rule(drs([],[J:pred(X,Sym,n,_)]),
    NN compounds: NOUN + PN + NOUN
 ------------------------------------------------------------------------------ */
 
-rule(drs([],[J:pred(X,Sym,n,_)]),
+rule(drs([],[J:pred(X,_,n,_)]),
      drs([],[H:pred(X,Sym0,n,Sense1),I:named(X,Sym1,Type,Sense)]),
 
      [ adjacent(H,I,_),
        adjacent(I,J,_),  
-       \+ member(Sym,[quantity,amount]),
-       \+ member(Sym0,[quantity,amount]),
        newref(New1),
        newref(New2) ],
 
@@ -1094,38 +938,17 @@ rule(drs([],[J:pred(X,Sym,n,_)]),
 
 
 /* ------------------------------------------------------------------------------
-   NN compounds: CARD + NOUN + NOUN
+   NN compounds: NOUN + NOUN
 ------------------------------------------------------------------------------ */
 
-% [4007]:pred(_G10737, percent, n, 1), [4006]:card(_G10737, 83.4, ge), [4008]:pred(_G10737, interest, n, 0)]
-
-rule(drs([],[K:pred(X,Sym0,n,_)]),
-     drs([],[I:card(X,Car,Type),J:pred(X,Sym,n,Sense)]),
-
-     [ adjacent(I,J,_), adjacent(J,K,_),
-       \+ member(Sym0,[quantity,amount]),
-       \+ member(Sym,[quantity,amount]),
-       newref(New) ],
-
-     drs([J:New],[I:card(New,Car,Type),J:pred(New,Sym,n,Sense),[]:rel(New,X,nn,0)])
-    ).
-
-
-
-/* ------------------------------------------------------------------------------
-   NN compounds: NOUN + NOUN
-
-rule(drs([],[J:pred(X,Sym0,n,_)]),
-     drs([],[I:pred(X,Sym,n,Sense)]),
+rule(drs([],[J:pred(X,_,n,_)]),
+     drs([],[I:pred(X,Sym1,n,Sense1)]),
 
      [ adjacent(I,J,_),
-       \+ member(Sym0,[quantity,amount]),
-       \+ member(Sym,[quantity,amount]),
        newref(New) ],
 
-     drs([I:New],[I:pred(New,Sym,n,Sense),[]:rel(New,X,nn,0)])
+     drs([I:New],[I:pred(New,Sym1,n,Sense1),[]:rel(New,X,nn,0)])
     ).
------------------------------------------------------------------------------- */
 
 
 /* ------------------------------------------------------------------------------
@@ -1136,7 +959,6 @@ rule(drs([],[J:pred(X,_,a,_),K:pred(X,_,n,_)]),
      drs([],[I:pred(X,Sym,n,Sense)]),
 
      [ adjacent(I,J,_),
-       \+ member(Sym,[quantity,amount]),
        adjacent(J,K,_),
        newref(New) ],
 
@@ -1175,13 +997,36 @@ rule(drs([],[J:pred(X,_,n,_)]),
 ------------------------------------------------------------------------------ */
 
 rule(drs([],[J:named(X,_,_,_)]),
-     drs([],[I:pred(X,Sym,n,Sense)]),
+     drs([],[I:pred(X,Sym1,n,Sense1)]),
 
      [ adjacent(I,J,_),
-       \+ member(Sym,[quantity,amount]),
        newref(New) ],
 
-     drs([I:New],[I:pred(New,Sym,n,Sense),[]:rel(New,X,nn,0)])).
+     drs([I:New],[I:pred(New,Sym1,n,Sense1),[]:rel(New,X,nn,0)])).
+
+
+%
+% Rules for James
+%
+/*
+rule(drs([],[]),
+     drs([],[[I]:named(X1,Sym1,per),[J]:named(X2,Sym2,per)]),
+
+     [ X2==X1,
+       J is I + 1 ], 
+
+     drs([],[[I]:named(X1,Sym1,fst),[J]:named(X2,Sym2,sur)])).
+
+rule(drs([],[]),
+     drs([],[[I]:named(X1,Sym1,per),[J]:named(X2,Sym2,per),[K]:named(X3,Sym3,per)]),
+
+     [ X2==X1,
+       X3==X2,
+       J is I + 1,
+       K is J + 1 ], 
+
+     drs([],[[I]:named(X1,Sym1,fst),[J]:named(X2,Sym2,fst),[K]:named(X3,Sym3,sur)])).
+*/
 
 
 /* ------------------------------------------------------------------------------
@@ -1209,7 +1054,7 @@ rule(drs([],[]),
      [ frametarget(I,Frame) ],
 
      drs([],[I:pred(E,Sym,v,1),[]:pred(E,Frame,a,99)])):-
-   option('--framenet',training).
+   user:option('--framenet',training).
 
 /*
 rule(drs([],[]),
@@ -1254,7 +1099,7 @@ rule(drs([I2:X],[[]:pred(E,_Frame,a,99)]),
      [ framerole(I2,Role) ],
 
      drs([],[I1:rel(E,X,Rel,1),[]:rel(E,X,Role,99)])):-
-   option('--framenet',training).
+   user:option('--framenet',training).
 
 % adverb
 %
@@ -1264,7 +1109,7 @@ rule(drs([],[[]:pred(E,_Frame,a,99)]),
      [ framerole(I1,Role) ],
 
      drs([],[I1:pred(E,Sym,a,1),[]:rel(E,E,Role,99)])):-
-   option('--framenet',training).
+   user:option('--framenet',training).
 
 % indirect (possessive)
 %
@@ -1274,7 +1119,7 @@ rule(drs([I2:Y],[[]:pred(E,_Frame,a,99),[]:rel(E,X,_,99)]),
      [ framerole(I2,Role) ],
 
      drs([],[I1:rel(X,Y,of,1),[]:rel(E,Y,Role,98)])):-
-   option('--framenet',training).
+   user:option('--framenet',training).
 
 
 /*========================================================================
@@ -1301,43 +1146,44 @@ adjacent(A,B,C):-
 
 
 /*========================================================================
+   Combine Symbols
+========================================================================*/
+
+combineSym(Sym1,Sym2,Sym):-
+   \+ Sym1='"',
+   \+ Sym2='"',
+   name(Sym1,Codes1),
+   name(Sym2,Codes2),
+   append(Codes1,[95|Codes2],Codes),
+   name(Sym,Codes).
+
+
+/*========================================================================
    Months
 ========================================================================*/
 
 month('january','01').
 month('jan','01').
-month('jan.','01').
-month('february','02').
 month('february','02').
 month('feb','02').
-month('feb.','02').
 month('march','03').
 month('mar','03').
-month('mar.','03').
 month('april','04').
 month('apr','04').
-month('apr','04').
-month('apr.','04').
 month('may','05').
 month('june','06').
 month('july','07').
 month('august','08').
 month('aug','08').
-month('aug.','08').
 month('september','09').
 month('sept','09').
 month('sep','09').
-month('sep.','09').
-month('sept.','09').
 month('october','10').
 month('oct','10').
-month('oct.','10').
 month('november','11').
 month('nov','11').
-month('nov.','11').
 month('december','12').
 month('dec','12').
-month('dec.','12').
 
 earlier_day('01','02').
 earlier_day('02','03').
@@ -1381,32 +1227,9 @@ earlier_doy(doy(M,D1),doy(M,D2)):-
    earlier(D1,D2), !.
 
 
-nextyofm(X,X,Y,Y):- !.
-
-nextyofm('12',M,Y1,Y3):- !,
-   nextYear(Y1,Y2),
-   nextyofm('01',M,Y2,Y3).
-
-nextyofm(M1,M,Y1,Y2):-
-   earlier_day(M1,M2),
-   nextyofm(M2,M,Y1,Y2).
- 
-
-
 /*========================================================================
    Format Years
 ========================================================================*/
-
-yearBC(bc).
-yearBC(bce).
-yearBC('b.c.').
-yearBC('b.c.e.').
-
-yearAD(ad).
-yearAD(ce).
-yearAD('a.d.').
-yearAD('c.e.').
-
 
 year(Y,F):- 
    atom_chars(Y,Chars),
@@ -1589,9 +1412,6 @@ day('31st','31').
    Hours
 ========================================================================*/
 
-hour(N,'a.m.',NN):- !, hour(N,am,NN).
-hour(N,'p.m.',NN):- !, hour(N,pm,NN).
-
 hour(1,am,'01'):-! .
 hour(2,am,'02'):-!.
 hour(3,am,'03'):-!.
@@ -1661,11 +1481,7 @@ dimension(young,age,1).
 
 quoted(Pred):-
    atom(Pred), 
-   atom_chars(Pred,[A,B,C,D|_]), 
-   member(t(A,B,C,D),[t('l','q','o','-'),
-                      t('L','Q','O','-'),
-                      t('b','m','v','_'),
-                      t('B','M','V','_')]), !.
+   atom_chars(Pred,['l','q','o','-'|_]), !.
 
 
 /*========================================================================
@@ -1699,8 +1515,8 @@ ppWords([word(I,W1)|L1],OldPos,[word(I,W2)|L2],[word(I,W2,OldPos,NewPos)|L3]):-
    atom(W1), 
    atom_chars(W1,C1),
    length(C1,Len),
-   ( C1=['L','Q','O','-'|C3]; C1=['B','M','V','_'|C3] ), !,
-   convertQuotes(C3,C2),      
+   C1 = ['L','Q','O','-'|_], !,
+   convertQuotes(C1,C2),      
    atom_chars(W2,C2),
    NewPos is OldPos + Len - 1,
    NextPos is NewPos + 2,
@@ -1730,17 +1546,21 @@ removeSpecialChars([X|L1],[X|L2]):- !, removeSpecialChars(L1,L2).
 
 convertQuotes([],[]).
 
-convertQuotes(['-','R','Q','O'|L1],L2):- !,
+convertQuotes(['L','Q','O','-'|L1],['"'|L2]):- !,
    convertQuotes(L1,L2).
 
-convertQuotes(['_','E','M','V'|L1],L2):- !,
+convertQuotes(['-','R','Q','O'|L1],['"'|L2]):- !,
    convertQuotes(L1,L2).
 
 convertQuotes(['-'|L1],[' '|L2]):- !,
    convertQuotes(L1,L2).
 
-convertQuotes(['_'|L1],[' '|L2]):- !,
-   convertQuotes(L1,L2).
-
 convertQuotes([X|L1],[X|L2]):-
    convertQuotes(L1,L2).
+
+
+
+   
+
+
+
