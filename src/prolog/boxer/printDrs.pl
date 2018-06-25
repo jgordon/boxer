@@ -70,9 +70,10 @@ formatDrs(Var,[Line,Line,Line,Codes,Line],N):-
    length(Line,N),
    append(Line,_,[32,32,32,32,32,32,32,32,32,32]).
 
-formatDrs(sdrs(Cons,Rel),Lines,Width):- !,
-   formatConds(Rel,[]-ConLines0,0-RelLength),
-   formatConds([cons(Cons)],[]-DrsLines0,RelLength-ConLength),
+formatDrs(sdrs(Conds,Rel),Lines,Width):- !,
+   cleanConds(Rel,CleanRel),
+   formatConds(CleanRel,[]-ConLines0,0-RelLength),
+   formatCond(cons(Conds),[]-DrsLines0,RelLength-ConLength),
    Length is max(ConLength,RelLength),
    closeConds(ConLines0,ConLines1,Length),
    closeConds(DrsLines0,DrsLines1,Length),
@@ -83,8 +84,9 @@ formatDrs(sdrs(Cons,Rel),Lines,Width):- !,
 
 formatDrs(_:drs(D,C),Codes,Width):- !, formatDrs(drs(D,C),Codes,Width).
 
-formatDrs(drs(Dom,Cond),[[32|Top],Refs3,[124|Line]|CondLines2],Width):- !,
-   formatConds(Cond,[]-CondLines1,0-CondLength),
+formatDrs(drs(Dom,Conds),[[32|Top],Refs3,[124|Line]|CondLines2],Width):- !,
+   cleanConds(Conds,CleanConds), sortConds(CleanConds,SortedConds),
+   formatConds(SortedConds,[]-CondLines1,0-CondLength),
    formatRefs(Dom,Refs1),
    length(Refs1,RefLength),
    Length is max(RefLength,CondLength),
@@ -217,16 +219,76 @@ formatLine(Code,N,In-[Code|Out]):-
 
 
 /*========================================================================
+     Clean DRS-Conditions
+========================================================================*/
+
+cleanConds(C1,C3):-
+   select(_:_:C,C1,C2), !,
+   cleanConds([C|C2],C3).
+
+cleanConds(C1,C3):-
+   select(_:C,C1,C2), !,
+   cleanConds([C|C2],C3).
+
+cleanConds(C1,C3):-
+   select(_:C,C1,C2), !,
+   cleanConds([C|C2],C3).
+
+cleanConds(C,C).
+
+
+/*========================================================================
+    Sort DRS-Conditions
+========================================================================*/
+
+sortConds(C1,[named(A,B,C,D)|C3]):-
+   select(named(A,B,C,D),C1,C2), !,
+   sortConds(C2,C3).
+
+sortConds(C1,[pred(A,B,C,D),Mod1,Mod2,Mod3,Mod4|C7]):-
+   select(pred(A,B,C,D),C1,C2),
+   selectModifier(A,Mod1,C2,C3),
+   selectModifier(A,Mod2,C3,C4),
+   selectModifier(A,Mod3,C4,C5),
+   selectModifier(A,Mod4,C5,C6), !,
+   sortConds(C6,C7).
+
+sortConds(C1,[pred(A,B,C,D),Mod1,Mod2,Mod3|C6]):-
+   select(pred(A,B,C,D),C1,C2),
+   selectModifier(A,Mod1,C2,C3),
+   selectModifier(A,Mod2,C3,C4),
+   selectModifier(A,Mod3,C4,C5), !,
+   sortConds(C5,C6).
+
+sortConds(C1,[pred(A,B,C,D),Mod1,Mod2|C5]):-
+   select(pred(A,B,C,D),C1,C2),
+   selectModifier(A,Mod1,C2,C3),
+   selectModifier(A,Mod2,C3,C4), !,
+   sortConds(C4,C5).
+
+sortConds(C1,[pred(A,B,C,D),Mod|C4]):-
+   select(pred(A,B,C,D),C1,C2),
+   selectModifier(A,Mod,C2,C3), !,
+   sortConds(C3,C4).
+
+sortConds(C1,[pred(A,B,C,D)|C3]):-
+   select(pred(A,B,C,D),C1,C2), !,
+   sortConds(C2,C3).
+
+sortConds(C,C).
+
+
+selectModifier(E,role(E,Y,S,1),C1,C2):- select(role(E,Y,S,1),C1,C2), !.
+selectModifier(E,role(E,Y,S,1),C1,C2):- select(role(Y,E,S,-1),C1,C2), !.
+selectModifier(E,rel(E,Y,S,T),C1,C2):- select(rel(E,Y,S,T),C1,C2), !.
+selectModifier(E,card(E,Y,S),C1,C2):- select(card(E,Y,S),C1,C2), !.
+
+
+/*========================================================================
      Formatting DRS-Conditions
 ========================================================================*/
 
 formatConds([],L-L,N-N):- !.
-
-formatConds([_:_:X|Rest],L,N):- !,
-   formatConds([X|Rest],L,N).
-
-formatConds([_:X|Rest],L,N):- !,
-   formatConds([X|Rest],L,N).
 
 formatConds([X|Rest],L1-L3,N1-N3):-
    formatCond(X,L2-L3,N1-N2), !,
@@ -308,11 +370,11 @@ formatCond(card(Arg,Integer,Type),L-[Line|L],N0-N2):- !,
    ( number(Integer), number_codes(Integer,D) ;
      \+ number(Integer), makeConstant(Integer,D) ),
    ( Type = eq, !, 
-     append([124|A],[124,32,61,32|D],Line)            %%% =
+     append([32,32,124|A],[124,32,61,32|D],Line)            %%% =
    ; Type = ge, !, 
-     append([124|A],[124,32,62,61,32|D],Line)         %%% >=
+     append([32,32,124|A],[124,32,62,61,32|D],Line)         %%% >=
    ; Type = le, !, 
-     append([124|A],[124,32,61,60,32|D],Line)         %%% =<
+     append([32,32,124|A],[124,32,61,60,32|D],Line)         %%% =<
    ),
    length(Line,Length),
    N2 is max(Length,N0).
@@ -357,6 +419,12 @@ specialRel(subset_of,     67):- !.          %%% C
      Formatting Basic Conditions
 ========================================================================*/
 
+%formatBasic(pred(Arg,Functor,a,_),Line):- !,
+%   atom_codes(Functor,F),
+%   makeConstant(Arg,A),   
+%   append([98,101,45|F],[40|A],T),
+%   append(T,[41],Line).
+
 formatBasic(pred(Arg,Functor,_,_),Line):- !,
    atom_codes(Functor,F),
    makeConstant(Arg,A),   
@@ -379,7 +447,7 @@ formatBasic(rel(Arg1,Arg2,Functor,_),Line):- !,
    atom_codes(Functor,F),
    makeConstant(Arg1,A1),
    makeConstant(Arg2,A2),
-   append(F,[40|A1],T1),
+   append([32,32|F],[40|A1],T1),
    append(T1,[44|A2],T2),
    append(T2,[41],Line).
 
