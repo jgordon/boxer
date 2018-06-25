@@ -13,13 +13,28 @@
    Tense
 ========================================================================= */
 
-tense(Mood,Index,Att-Att,Sem):-
+tense(Mood,Index,Att-[sem:Tag|Att],Sem):-
    option('--tense',true), 
    member(Mood,[dcl,inv,wq,q]),
    att(Att,pos,PoS), 
-   tense(PoS,Index,Sem), !.
+   pos2tense(PoS,Index,Sem,Tag), !.
 
-tense(_,_,Att-Att,Sem):-
+tense(com,_,Att-[sem:'MOR'|Att],Sem):- !,
+   Sem = lam(S,lam(M,app(S,M))).
+
+tense(adj,_,Att-[sem:'IST'|Att],Sem):- !,
+   Sem = lam(S,lam(M,app(S,M))).
+
+tense(ng,_,Att-[sem:'EXG'|Att],Sem):-
+   Sem = lam(S,lam(M,app(S,M))).
+
+tense(pt,_,Att-[sem:'EXT'|Att],Sem):-
+   Sem = lam(S,lam(M,app(S,M))).
+
+tense(pss,_,Att-[sem:'EXV'|Att],Sem):-
+   Sem = lam(S,lam(M,app(S,M))).
+
+tense(_,_,Att-[sem:'EXS'|Att],Sem):-
    Sem = lam(S,lam(M,app(S,M))).
 
 
@@ -27,7 +42,7 @@ tense(_,_,Att-Att,Sem):-
    Past Tense
 ------------------------------------------------------------------------- */
 
-tense('VBD',Index,Sem):- 
+pos2tense('VBD',Index,Sem,'PST'):- 
    Sem = lam(S,lam(F,app(S,lam(E,merge(B2:drs([B1:[]:N,B2:Index:T],
                                               [B1:[]:pred(N,now,a,1),
                                                B2:[]:rel(E,T,temp_included,1),
@@ -39,7 +54,7 @@ tense('VBD',Index,Sem):-
    Present Tense
 ------------------------------------------------------------------------- */
 
-tense(Cat,Index,Sem):- 
+pos2tense(Cat,Index,Sem,'NOW'):- 
    member(Cat,['VBP','VBZ']), !,
    Sem = lam(S,lam(F,app(S,lam(E,merge(B2:drs([B1:[]:N,B2:Index:T],
                                               [B1:[]:pred(N,now,a,1),
@@ -52,7 +67,7 @@ tense(Cat,Index,Sem):-
    Future Tense
 ------------------------------------------------------------------------- */
 
-tense('MD',Index,Sem):- 
+pos2tense('MD',Index,Sem,'FUT'):- 
    Sem = lam(S,lam(F,app(S,lam(E,merge(B2:drs([B1:[]:N,B2:Index:T],
                                               [B1:[]:pred(N,now,a,1),
                                                B2:[]:rel(E,T,temp_included,1),
@@ -68,7 +83,7 @@ tense('MD',Index,Sem):-
    Present Perfect
 ------------------------------------------------------------------------- */
  
-aspect(pt,_,Index,Att-Att,Sem):-
+aspect(pt,_,Index,Att-[sem:'ENT'|Att],Sem):-
    option('--tense',true),
    att(Att,pos,PoS),
    member(PoS,['VBZ','VBP']), !,
@@ -85,7 +100,7 @@ aspect(pt,_,Index,Att-Att,Sem):-
    Past Perfect
 ------------------------------------------------------------------------- */
 
-aspect(pt,_,Index,Att-Att,Sem):-
+aspect(pt,_,Index,Att-[sem:'EPT'|Att],Sem):-
    option('--tense',true),
    att(Att,pos,'VBD'),
    Sem = lam(S,lam(F,app(S,lam(E,merge(B2:drs([B1:[]:N,B2:Index:T,B2:[]:St],
@@ -96,12 +111,20 @@ aspect(pt,_,Index,Att-Att,Sem):-
 %                                      app(F,St)))))).
                                        app(F,E)))))).
 
-
 /* -------------------------------------------------------------------------
-   Perfect Passive
+   Other Perfect
 ------------------------------------------------------------------------- */
 
-aspect(pss,pt,Index,Att-Att,Sem):-
+aspect(pt,Mood,Index,Att1-[sem:'EXT'|Att2],Sem):-
+   option('--tense',true), !,
+   tense(Mood,Index,Att1-Att2,Sem).
+
+
+/* -------------------------------------------------------------------------
+   Perfect Passive (incorrect?)
+------------------------------------------------------------------------- */
+
+aspect(pss,pt,Index,Att-[sem:'ETV'|Att],Sem):-
    option('--tense',true), !,
    Sem = lam(S,lam(F,app(S,lam(E,merge(B2:drs([B2:Index:T,B2:[]:St],
                                               [B2:[]:rel(St,T,temp_includes,1),
@@ -114,7 +137,7 @@ aspect(pss,pt,Index,Att-Att,Sem):-
    Perfect Progressive 
 ------------------------------------------------------------------------- */
 
-aspect(ng,pt,Index,Att-Att,Sem):-
+aspect(ng,pt,Index,Att-[sem:'ETG'|Att],Sem):-
    option('--tense',true), !,
    Sem = lam(S,lam(F,app(S,lam(E,merge(B2:drs([B2:Index:T,B2:[]:St],
                                               [B2:[]:rel(St,T,temp_includes,1),
@@ -127,7 +150,7 @@ aspect(ng,pt,Index,Att-Att,Sem):-
    Present Progressive
 ------------------------------------------------------------------------- */
 
-aspect(ng,_,Index,Att-Att,Sem):-
+aspect(ng,_,Index,Att-[sem:'ENG'|Att],Sem):-
    option('--tense',true), 
    att(Att,pos,PoS),
    member(PoS,['VBZ','VBP']), !,
@@ -144,7 +167,7 @@ aspect(ng,_,Index,Att-Att,Sem):-
    Past Progressive
 ------------------------------------------------------------------------- */
 
-aspect(ng,_,Index,Att-Att,Sem):-
+aspect(ng,_,Index,Att-[sem:'EPG'|Att],Sem):-
    att(Att,pos,'VBD'),
    option('--tense',true), !,
    Sem = lam(S,lam(F,app(S,lam(E,merge(B2:drs([B1:[]:N,B2:Index:T,B2:[]:St],
@@ -154,6 +177,14 @@ aspect(ng,_,Index,Att-Att,Sem):-
                                                B2:[]:rel(E,St,temp_overlap,1)]),
 %                                      app(F,St)))))).
                                        app(F,E)))))).
+
+/* -------------------------------------------------------------------------
+   Other Progressive
+------------------------------------------------------------------------- */
+
+aspect(ng,Mood,Index,Att1-[sem:'EXG'|Att2],Sem):-
+   option('--tense',true), !,
+   tense(Mood,Index,Att1-Att2,Sem).
 
 
 /* -------------------------------------------------------------------------
