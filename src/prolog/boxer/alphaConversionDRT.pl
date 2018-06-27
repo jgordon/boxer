@@ -3,7 +3,6 @@
 
 :- use_module(library(lists),[member/2]).
 :- use_module(semlib(errors),[warning/2]).
-:- use_module(knowledge(relations),[nn/3]).
 
 
 /*========================================================================
@@ -151,6 +150,7 @@ alphaConvertCondition(rel(Arg1,Arg2,Sym),Var,Ptr-Ptr,rel(Arg3,Arg4,Sym)):- !,
    alphaConvertVar(Arg2,Var,Arg4).
 
 alphaConvertCondition(rel(Arg1,Arg2,'=',0),Var,Ptr,Rel):- !,
+   warning('Unexpected relation symbol: ~p = ~p',[Arg1,Arg2]),
    alphaConvertCondition(eq(Arg1,Arg2),Var,Ptr,Rel).
 
 alphaConvertCondition(rel(Arg1,Arg2,Sym1,Sense),Var,Ptr,rel(Arg3,Arg4,Sym2,Sense)):- !,
