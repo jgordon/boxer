@@ -2,6 +2,7 @@
 :- module(determiners,[semlex_det/4]).
 :- use_module(boxer(resolveDRT),[goldAntecedent/2]).
 :- use_module(boxer(categories),[rel/3]).
+:- use_module(semlib(options),[option/2]).
 
 /* =========================================================================
    Determiners: NP/N
@@ -16,39 +17,46 @@
 ------------------------------------------------------------------------- */
 
 semlex_det(Lemma,Index,Att-Att,Sem):-
-   member(Lemma,[a,an,one,some,few,several]), !,
+   member(Lemma,[a,an,one,some,several]), !,
    Sem = lam(N,lam(P,merge(merge(B:drs([B:Index:X],[]),
                                  app(N,X)),
                            app(P,X)))).
 
 
 /* -------------------------------------------------------------------------
-   Universally quantifying
-------------------------------------------------------------------------- */
-
-semlex_det(Lemma,Index,Att-Att,Sem):-
-   member(Lemma,[all,each,either,any,every,whichever,whatever]), !,
-   Sem = lam(N,lam(P,B1:drs([],[B1:[]:imp(merge(B2:drs([B2:Index:X],[]),
-                                          app(N,X)),
-                                    app(P,X))]))).
-
-
-/* -------------------------------------------------------------------------
    Generalized Quantifiers
 ------------------------------------------------------------------------- */
 
-semlex_det(Lemma,Index,Att-Att,Sem):-
-   member(Lemma,[most,two,three]), !,
+semlex_det(Lemma,Index,Att-[sem:'UNK'|Att],Sem):-
+   member(Lemma,[few,most,two,three]), !,
    Sem = lam(N,lam(P,B1:drs([],[B1:[]:duplex(Lemma,merge(B2:drs([B2:Index:X],[]),
                                                          app(N,X)),X,
                                              app(P,X))]))).
 
 
 /* -------------------------------------------------------------------------
+   Universally quantifying
+------------------------------------------------------------------------- */
+
+semlex_det(Lemma,Index,Att-[sem:'AND'|Att],Sem):-
+   member(Lemma,[all,each,either,any,every,most,whichever,whatever]),
+   option('--semantics',amr), !,
+   Sem = lam(N,lam(P,merge(merge(B:drs([B:[]:X,B:[]:A],[B:Index:pred(A,Lemma,a,1),
+                                                        B:[]:rel(X,A,mod,2)]),
+                           app(N,X)),app(P,X)))).
+
+semlex_det(Lemma,Index,Att-[sem:'AND'|Att],Sem):-
+   member(Lemma,[all,each,either,any,every,most,whichever,whatever]), !,
+   Sem = lam(N,lam(P,B1:drs([],[B1:[]:imp(merge(B2:drs([B2:Index:X],[]),
+                                          app(N,X)),
+                                    app(P,X))]))).
+
+
+/* -------------------------------------------------------------------------
    Negation
 ------------------------------------------------------------------------- */
 
-semlex_det(no,Index,Att-Att,Sem):- !,
+semlex_det(no,Index,Att-[sem:'NOT'|Att],Sem):- !,
    Sem = lam(N,lam(P,B1:drs([],[B1:Index:not(merge(B2:drs([B2:Index:X],[]),
                                              merge(app(N,X),
                                                    app(P,X))))]))).
@@ -57,6 +65,20 @@ semlex_det(no,Index,Att-Att,Sem):- !,
 /* -------------------------------------------------------------------------
    Definites/Demonstratives
 ------------------------------------------------------------------------- */
+
+semlex_det(Lemma,Index,Att-[sem:'PRX'|Att],Sem):-
+   option('--semantics',amr),
+   member(Lemma,[this,these]), !,
+   Sem = lam(N,lam(P,alfa(def,merge(B:drs([B:[]:X,B:[]:E],[B:Index:pred(E,this,a,1),B:[]:rel(X,E,mod,1)]),
+                                    app(N,X)),
+                              app(P,X)))).
+
+semlex_det(Lemma,Index,Att-[sem:'DST'|Att],Sem):-
+   option('--semantics',amr),
+   member(Lemma,[that,those]), !,
+   Sem = lam(N,lam(P,alfa(def,merge(B:drs([B:[]:X,B:[]:E],[B:Index:pred(E,that,a,1),B:[]:rel(X,E,mod,1)]),
+                                    app(N,X)),
+                              app(P,X)))).
 
 semlex_det(Lemma,Index,Att-Att,Sem):-
    member(Lemma,[the,that,this,those,these,both]), !,
@@ -113,7 +135,7 @@ semlex_det(my,Index,Att1-Att2,Sem):- !,
                                              app(N,X)),
                                        app(P,X))))).
 
-semlex_det(Lemma,Index,Att1-Att2,Sem):- 
+semlex_det(Lemma,Index,Att1-Att2,Sem):-
    member(Lemma,[your,thy]), !,
    goldAntecedent(Index,Att1),
    rel(of,Att1-Att2,Relation),
