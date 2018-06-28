@@ -15,13 +15,13 @@ file_search_path(lex,        'src/prolog/boxer/lex').
 
 :- dynamic verbnet/3.
 
-
 /* ========================================================================
    Modules
 =========================================================================*/
 
-:- use_module(library(lists),[member/2]).
+:- use_module(library(lists),[member/2,reverse/2,append/3]).
 :- use_module(boxer(slashes)).
+:- use_module(knowledge(roles),[old2new/2]).
 
 
 /* ========================================================================
@@ -90,17 +90,58 @@ frames([Frame|L],Names,ID,File):-
    example(Frame,Example),
    elements(Frame,['SYNTAX'],f(_,Syntax)),  
    subcat(Syntax,[],SubCat), 
-   reverse(SubCat,Normal),
-   ccg(SubCat,C^C,CCG,Missing,Roles),
+%write(syntax:Syntax),nl,
+%write(subcat:SubCat),nl,
+   ccg(SubCat,C^C,CCG,Missing,Roles0),
+   roles2roles(Roles0,Roles1),
+   append(Wrong,[Role],Roles1),
+   reverse(Wrong,Right),
+   append(Right,[Role],Roles),
    atom_chars(ID,IDChars),
    formatID(IDChars,[_,_|FID]),
+   reverse(SubCat,Normal),
    format('~n%%% File:    ~p~n%%% Primary: ~p (~p)~n%%% Syntax:  ~p~n',[File,Primary,ID,Normal]),
    write('%%% CCG:     '), write(CCG), 
    format('~n%%% Roles:   ~p~n',[Roles]),
    ( Missing = [], !; format('%%% Missing: ~p~n',[Missing]) ),
    format('%%% Example: ~p~n%%%~n',[Example]),
-   frameMembers(Names,CCG,FID,Roles),
+   frameMembers(Names,CCG,FID,Roles), !,
+   addPP(SubCat,FID),
    frames(L,Names,ID,File).
+
+frames([Frame|L],Names,ID,File):-
+   format('% frameproblem: ~p~n',[Frame]),
+   frames(L,Names,ID,File).
+
+
+/* ----------------------------------------------------------------------
+   Add PP/NP categories with role
+---------------------------------------------------------------------- */ 
+
+addPP([X,lex:as|L],FID):- !, 
+   addPP([X,prep:as|L],FID).
+
+addPP([np:Old,prep:Preps|_],FID):- !,
+   old2new(Old,New), 
+   atomic_list_concat(L,' ',Preps),
+   findall(_,(member(Prep,L),format('verbnet(~p, pp/np, [~q], ~p).~n',[Prep,New,FID]),add(pp/np,[New])),_).
+
+addPP([vp_ng:Old,prep:Preps|_],FID):- !, 
+   old2new(Old,New), 
+   atomic_list_concat(L,' ',Preps),
+   findall(_,(member(Prep,L),format('verbnet(~p, pp/(s:ng\\np), [~q], ~p).~n',[Prep,New,FID]),add(pp/np,[New])),_).
+
+addPP([vp_to:Old,prep:Preps|_],FID):- !, 
+   old2new(Old,New), 
+   atomic_list_concat(L,' ',Preps),
+   findall(_,(member(Prep,L),format('verbnet(~p, pp/(s:to\\np), [~q], ~p).~n',[Prep,New,FID]),add(pp/np,[New])),_).
+
+addPP([s:Old,prep:Preps|_],FID):- !, 
+   old2new(Old,New), 
+   atomic_list_concat(L,' ',Preps),
+   findall(_,(member(Prep,L),format('verbnet(~p, pp/s:_, [~q], ~p).~n',[Prep,New,FID]),add(pp/np,[New])),_).
+
+addPP(_,_).
 
 
 /* ----------------------------------------------------------------------
@@ -187,6 +228,14 @@ subcat([E|L],Acc1,Acc3):- cat(E,Acc1,Acc2), subcat(L,Acc2,Acc3).
 
 
 /* ----------------------------------------------------------------------
+   Converting Verbnet Roles to LIRICS
+---------------------------------------------------------------------- */ 
+
+roles2roles([],[]).
+roles2roles([X|L1],[Y|L2]):- old2new(X,Y), roles2roles(L1,L2).
+
+
+/* ----------------------------------------------------------------------
    Constructing CCG category
 ---------------------------------------------------------------------- */ 
 
@@ -194,18 +243,28 @@ subcat([E|L],Acc1,Acc3):- cat(E,Acc1,Acc2), subcat(L,Acc2,Acc3).
 %
 ccg([np:_,pp],X^C,C,[],[]):- !, X=pp.
 ccg([np:_,prep:_],X^C,C,[],[]):- !, X=pp.
+ccg([vp_ng:_,prep:_],X^C,C,[],[]):- !, X=pp.
+ccg([vp_to:_,prep:_],X^C,C,[],[]):- !, X=pp.
+ccg([np:_,lex:as],X^C,C,[],[]):- !, X=pp.
 ccg([np:R],np^C,C,[],[R]):- !.
 ccg([s:R],(s:'_')^C,C,[],[R]):- !.
-ccg([pp:_],pp^C,C,[],[]):- !.
+%ccg([(s:ng\np):R],(s:ng\np)^C,C,[],[R]):- !.
+ccg([pp:_],pp^C,C,[],[]):- !. % needed?
 ccg([X],X^C,C,[],[]):- !.
 
 % recursive
 %
+ccg([np:_,lex:as|L],X^Old,New,M,Roles):- !, ccg(L,X^(Old/pp),New,M,Roles).
 ccg([np:_,prep:_|L],X^Old,New,M,Roles):- !, ccg(L,X^(Old/pp),New,M,Roles).
+ccg([s:_,prep:_|L],X^Old,New,M,Roles):- !, ccg(L,X^(Old/pp),New,M,Roles).
+ccg([vp_to:_,prep:_|L],X^Old,New,M,Roles):- !, ccg(L,X^(Old/pp),New,M,Roles).
+ccg([vp_ng:_,prep:_|L],X^Old,New,M,Roles):- !, ccg(L,X^(Old/pp),New,M,Roles).
 ccg([np:_,pp|L],X^Old,New,M,Roles):- !, ccg(L,X^(Old/pp),New,M,Roles).
 ccg([np:R|L],X^Old,New,M,[R|Oles]):- !, ccg(L,X^(Old/np),New,M,Oles).
 ccg([s_to:R|L],X^Old,New,M,[R|Oles]):- !, ccg(L,X^(Old/(s:to\np)),New,M,Oles).
-ccg([s_ng:R|L],X^Old,New,M,[R|Oles]):- !, ccg(L,X^(Old/(s:ng\np)),New,M,Oles).
+ccg([vp_ng:R|L],X^Old,New,M,[R|Oles]):- !, ccg(L,X^(Old/(s:ng\np)),New,M,Oles).
+ccg([vp_to:R|L],X^Old,New,M,[R|Oles]):- !, ccg(L,X^(Old/(s:ng\np)),New,M,Oles).
+ccg([vp_b:R|L],X^Old,New,M,[R|Oles]):- !, ccg(L,X^(Old/(s:b\np)),New,M,Oles).
 ccg([s:R|L],X^Old,New,M,[R|Oles]):- !, ccg(L,X^(Old/s:'_'),New,M,Oles).
 ccg([v|L],X^Old,New,M,Roles):- !, X=(s:'_'\Y), ccg(L,Y^Old,New,M,Roles).
 ccg([adv|L],Old,New,M,Roles):- !, ccg(L,Old,New,M,Roles).
@@ -221,18 +280,29 @@ restr(Restr,Type):-
   Restr = [element('SYNRESTRS',[],L)],
   member(element('SYNRESTR',['Value'='+',type=Type],[]),L), !.
 
+ing(acc_ing).
+ing(oc_ing).
+ing(ac_ing).
+ing(be_sc_ing).
+ing(np_omit_ing). 
+
+inf(oc_to_inf).
+inf(ac_to_inf).
+inf(sc_to_inf).
+inf(vc_to_inf).
+inf(rs_to_inf). 
+inf(to_inf_rs). 
+
+bare(oc_bare_inf).
+
+s_restr(np_to_inf).
 s_restr(that_comp).
 s_restr(for_comp).
 s_restr(wh_comp).
+s_restr(quotation).
 
-% s_restr(poss_ing). % not sentence!
-s_restr(acc_ing).
-s_restr(oc_ing).
-s_restr(ac_ing).
-s_restr(be_sc_ing).
-s_restr(np_omit_ing).  % ???
-s_restr(np_ppart).     % ??? 
-s_restr(np_p_ing).     % ???
+% s_restr(np_ppart).     % ??? 
+%s_restr(np_p_ing).     % ???
 s_restr(np_ing).       % ???
 
 s_restr(how_extract).
@@ -241,23 +311,18 @@ s_restr(what_extract).
 s_restr(wh_inf).
 s_restr(what_inf).
 s_restr(wheth_inf).
-s_restr(oc_bare_inf).
-s_restr(oc_to_inf).
-s_restr(ac_to_inf).
-s_restr(sc_to_inf).
-s_restr(np_to_inf).
-s_restr(vc_to_inf).
-s_restr(rs_to_inf). % very rare -- bug?
-s_restr(to_inf_rs). % very rare -- bug?
+
+
 
 
 /* ----------------------------------------------------------------------
    Printing a category
 ---------------------------------------------------------------------- */ 
 
-cat(element('NP', [value=Value], R),A,[s_ng:Value|A]):- restr(R,ac_ing), !.
-cat(element('NP', [value=Value], R),A,[s_to:Value|A]):- restr(R,sc_to_inf), !.
-cat(element('NP', [value=Value], R),A,[s:Value|A]):- s_restr(S), restr(R,S), !.
+cat(element('NP', [value=Value], R),A,[vp_ng:Value|A]):- ing(Ing), restr(R,Ing), !.
+cat(element('NP', [value=Value], R),A,[vp_to:Value|A]):- inf(Inf), restr(R,Inf), !.
+cat(element('NP', [value=Value], R),A,[vp_b:Value|A]):- bare(B), restr(R,B), !.
+cat(element('NP', [value=Value], R),A,[s:Value|A]):-     s_restr(S), restr(R,S), !.
 cat(element('NP', [value=Value], _),A,[np:Value|A]):- !.
 cat(element('PREP', [], _),A,[pp|A]):- !.
 cat(element('PREP', [value=Value], _),A,[prep:Value|A]):- !.
@@ -300,16 +365,22 @@ verbnet_dir('ext/VerbNet/').
    Processing all XML files
 ---------------------------------------------------------------------- */ 
 
-process([]):- planB.
+process([]):- 
+   planB.
 
 process([File|L]):-
    verbnet2prolog(File), !,
    process(L).
 
+
+/* ----------------------------------------------------------------------
+   Plan B (verbs that are not in VerbNet)
+---------------------------------------------------------------------- */ 
+
 planB:- 
    setof(X,A^B^verbnet(X,A,B),L), 
    format('~n%%% Most frequent roles for a particular CCG category.~n%%%~n',[]),
-   format('verbnet(_, ~p, [~q], []). % ~n',[s:adj\np,'Topic']),
+   format('verbnet(_, ~p, [~q], []). % ~n',[s:adj\np,'Theme']),
    planB(L).
 
 planB([]).
@@ -320,6 +391,7 @@ planB([CCG|L]):-
    write(CCG), 
    format(' , ~q, []). % n=~p~n',[R,N]), 
    planB(L).
+
 
 /* ----------------------------------------------------------------------
    Header
@@ -337,11 +409,16 @@ header:-
 ---------------------------------------------------------------------- */ 
 
 wildCard('*.xml').
+%wildCard('addict-96.xml').
+%wildCard('accompany-51.7.xml').
+%wildCard('cooperate-73.xml').
+%wildCard('manner_speaking-37.3.xml').
 %wildCard('put-9.1.xml').
 %wildCard('matter-91.xml').
 %wildCard('run-51.3.2.xml').
 %wildCard('adjust-26.9.xml').
 %wildCard('amalgamate-22.2.xml').
+%wildCard('instr_communication-37.4.xml').
 
 
 /* ----------------------------------------------------------------------

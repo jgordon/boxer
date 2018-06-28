@@ -547,7 +547,7 @@ compare([Tok1|_],[_:[tok:Tok2|_]|_]):- !,
    warning('unboxer generated different surface token "~p" instead of "~p"',[Tok1,Tok2]).
 
 compare([Tok1|_],[]):- !,
-   warning('unboxer generated exta surface token "~p"',[Tok1]).
+   warning('unboxer generated extra surface token "~p"',[Tok1]).
 
 compare([],[_:[tok:Tok2|_]|_]):- !,
    warning('unboxer missed surface token "~p"',[Tok2]).
