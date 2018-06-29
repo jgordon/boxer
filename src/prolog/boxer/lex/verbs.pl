@@ -164,7 +164,7 @@ semlex_verb(Cat,Sym,Index,Att-Att,Sem):-
     Copula (experimental, giving negation wide scope in 'there is no')
 ------------------------------------------------------------------------- */
 
-semlex_verb(Cat,be,Index,Att1-Att2,Sem):-
+semlex_verb(Cat,be,Index,Att1-[sem:'EXS'|Att2],Sem):-
    option('--x',true),
    option('--copula',true),
    member(Cat,[(s:Mood\np)/np,(s:Mood/np)/np]), !,
@@ -180,6 +180,13 @@ semlex_verb(Cat,be,Index,Att1-Att2,Sem):-
 ------------------------------------------------------------------------- */
 
 semlex_verb(Cat,be,Index,Att1-Att2,Sem):-
+   option('--semantics',amr),
+   member(Cat,[(s:Mood\np)/np,(s:Mood/np)/np]), !,
+   DRS = app(NP2,lam(Y,merge(B2:drs([],[B2:Index:rel(Y,X,domain,1)]),app(P,Y)))),
+   tense(Mood,[],Att1-Att2,TDRS),
+   Sem = lam(NP2,lam(NP1,app(TDRS,lam(P,app(NP1,lam(X,DRS)))))).
+
+semlex_verb(Cat,be,Index,Att1-[sem:'EXS'|Att2],Sem):-
    option('--copula',true),
    member(Cat,[(s:Mood\np)/np,(s:Mood/np)/np]), !,
    DRS = merge(B:drs([B:[]:E],
@@ -194,30 +201,15 @@ semlex_verb(Cat,be,Index,Att1-Att2,Sem):-
     Copula  (place holder for be with IS-A sense)
 ------------------------------------------------------------------------- */
 
-semlex_verb(Cat,be,Index,Att1-Att2,Sem):-
-    option('--copula',true),
-    member(Cat,[(s:Mood\np)/np,(s:Mood/np)/np]), !,
-    DRS = merge(B:drs([B:[]:E],
-                      [B:[]:prop(E,B2:drs([],[B2:[]:imp(merge(B3:drs([B3:[]:X],[]),app(NP1,lam(Y,B4:drs([],[B4:[]:eq(Y,X)])))),
-                                                    app(NP2,lam(Y,B5:drs([],[B5:Index:eq(Y,X)]))))]))]),
-                app(P,E)),
-    tense(Mood,[],Att1-Att2,TDRS),
-    Sem = lam(NP2,lam(NP1,app(TDRS,lam(P,DRS)))).
-
-semlex_verb(Cat,be,Index,Att1-Att3,Sem):-
-   option('--semantics',tacitus),
-   member(Cat,[(s:Mood\np)/np,(s:Mood/np)/np]),
-   roles(be,Cat,[Role],Att1-Att2), !,
+semlex_verb(Cat,be,Index,Att1-[sem:'EXS'|Att2],Sem):-
+   option('--copula',true),
+   member(Cat,[(s:Mood\np)/np,(s:Mood/np)/np]), !,
    DRS = merge(B:drs([B:[]:E],
-                     [B:Index:pred(E,be,v,1),
-                      B:[]:role(E,X,Role,1),
-                      B:[]:eq(X,Y)]),
+                     [B:[]:prop(E,B2:drs([],[B2:[]:imp(merge(B3:drs([B3:[]:X],[]),app(NP1,lam(Y,B4:drs([],[B4:[]:eq(Y,X)])))),
+                                                    app(NP2,lam(Y,B5:drs([],[B5:Index:eq(Y,X)]))))]))]),
                app(P,E)),
-   tense(Mood,[],Att2-Att3,TDRS),
-   Sem = lam(NP2,lam(NP1,app(TDRS,
-                             lam(P,app(NP1,
-                                       lam(X,app(NP2,
-                                                 lam(Y,DRS)))))))).
+   tense(Mood,[],Att1-Att2,TDRS),
+   Sem = lam(NP2,lam(NP1,app(TDRS,lam(P,DRS)))).
 
 
 /* -------------------------------------------------------------------------
@@ -363,7 +355,7 @@ semlex_verb(Cat,Sym,Index,Att-Att,Sem):-
    Ditransitive (np V np np)
 ------------------------------------------------------------------------- */
 
-semlex_verb(Cat,Sym,Index,Att1-Att3,Sem):-
+semlex_verb(Cat,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
    Cat = ((s:Mood\np)/np)/np, !,
    roles(Sym,Cat,[Role3,Role2,Role1],Att1-Att2),
    att(Att2,sense,Sense),
@@ -377,8 +369,8 @@ semlex_verb(Cat,Sym,Index,Att1-Att3,Sem):-
    Sem = lam(NP3,lam(NP2,lam(NP1,app(TDRS,
                                      lam(P,app(NP1,
                                                lam(X,app(NP2,
-                                                         lam(Z,app(NP3,
-                                                                   lam(Y,DRS))))))))))).
+                                                         lam(Y,app(NP3,
+                                                                   lam(Z,DRS))))))))))).
 
 /* -------------------------------------------------------------------------
    Ditransitive (np V np pp)
