@@ -9,8 +9,7 @@
 :- use_module(library(lists),[member/2]).
 :- use_module(lex(tense),[tense/4,aspect/5]).
 :- use_module(boxer(categories),[category/4,
-				 roles/4,att/3,
-                                 category_type/5]).
+				 roles/4,att/3,category_type/5]).
 :- use_module(boxer(closure),[plosing/1]).
 
 
@@ -112,10 +111,26 @@ semlex_verb(s:adj\np,necessary,Index,Att-Att,Sem):-
 
 
 /* -------------------------------------------------------------------------
-   Intransitive (standard case)
+   Intransitive (comparative)
 ------------------------------------------------------------------------- */
 
 semlex_verb(Cat,Sym,Index,Att1-Att3,Sem):-
+   member(Cat,[s:adj\np,s:adj/np]),
+   att(Att1,pos,'JJR'),
+   roles(Sym,Cat,[Role],Att1-Att2), !,
+   att(Att2,sense,Sense),
+   DRS = merge(B:drs([B:[]:E],
+                     [B:Index:pred(E,Sym,a,Sense),B:[]:role(E,X,Role,1),B:[]:pred(E,more,r,1)]),
+               app(P,E)),
+   tense(com,[],Att2-Att3,TDRS),
+   Sem = lam(NP,app(TDRS,lam(P,app(NP,lam(X,DRS))))).
+
+
+/* -------------------------------------------------------------------------
+   Intransitive (standard case)
+------------------------------------------------------------------------- */
+
+semlex_verb(Cat,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
    member(Cat,[s:Mood\np,s:Mood/np]),
    roles(Sym,Cat,[Role],Att1-Att2), !,
    ( Mood=adj, !, Pos=a; \+ Mood=adj, Pos=v ),
@@ -146,33 +161,42 @@ semlex_verb(Cat,Sym,Index,Att-Att,Sem):-
 ========================================================================= */
 
 /* -------------------------------------------------------------------------
-    Copula
+    Copula (experimental, giving negation wide scope in 'there is no')
 ------------------------------------------------------------------------- */
 
-% expriment, giving negation wide scope in 'there is no'
 semlex_verb(Cat,be,Index,Att1-Att2,Sem):-
    option('--x',true),
    option('--copula',true),
-   category_type(Cat,_,npVnp,_,Mood), !,
+   member(Cat,[(s:Mood\np)/np,(s:Mood/np)/np]), !,
    DRS = merge(B:drs([B:[]:E],
                      [B:[]:prop(E,app(NP2,lam(Y,app(NP1,lam(X,B2:drs([],[B2:Index:eq(X,Y)]))))))]),
                app(P,E)),
    tense(Mood,[],Att1-Att2,TDRS),
    Sem = lam(NP2,lam(NP1,app(TDRS,lam(P,DRS)))).
 
-% old version
+
+/* -------------------------------------------------------------------------
+    Copula
+------------------------------------------------------------------------- */
+
 semlex_verb(Cat,be,Index,Att1-Att2,Sem):-
    option('--copula',true),
-   category_type(Cat,_,npVnp,_,Mood), !,
+   member(Cat,[(s:Mood\np)/np,(s:Mood/np)/np]), !,
    DRS = merge(B:drs([B:[]:E],
                      [B:[]:prop(E,app(NP2,lam(Y,B2:drs([],[B2:Index:eq(X,Y)]))))]),
                app(P,E)),
    tense(Mood,[],Att1-Att2,TDRS),
    Sem = lam(NP2,lam(NP1,app(TDRS,lam(P,app(NP1,lam(X,DRS)))))).
 
-semlex_verb(Cat,be,Index,Att1-Att2,Sem):-          %%% place holder for IS-A sense
+
+
+/* -------------------------------------------------------------------------
+    Copula  (place holder for be with IS-A sense)
+------------------------------------------------------------------------- */
+
+semlex_verb(Cat,be,Index,Att1-Att2,Sem):-
     option('--copula',true),
-    category_type(Cat,_,npVnp,_,Mood), !,
+    member(Cat,[(s:Mood\np)/np,(s:Mood/np)/np]), !,
     DRS = merge(B:drs([B:[]:E],
                       [B:[]:prop(E,B2:drs([],[B2:[]:imp(merge(B3:drs([B3:[]:X],[]),app(NP1,lam(Y,B4:drs([],[B4:[]:eq(Y,X)])))),
                                                     app(NP2,lam(Y,B5:drs([],[B5:Index:eq(Y,X)]))))]))]),
@@ -252,7 +276,7 @@ semlex_verb((s:Mood\np_thr)/np,_,Index,Att1-Att2,Sem):- !,
 
 semlex_verb(Cat,be,Index,Att1-Att2,Sem):-
    option('--copula',true),
-   category_type(Cat,_,npVpp,_,Mood), !,
+   member(Cat,[(s:Mood\np)/pp,(s:Mood/np)/pp]), !,
    DRS = merge(B:drs([B:[]:E],
                      [B:[]:prop(E,app(PP,Y))]),
                app(P,E)),
@@ -508,7 +532,7 @@ semlex_verb(Cat,Sym,Index,Att1-Att3,Sem):-
    Intransitive (np V s)
 ------------------------------------------------------------------------- */
 
-semlex_verb(Cat,Sym,Index,Att1-Att3,Sem):-
+semlex_verb(Cat,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
    Cat = (s:Mood\np)/s:Emb,
    member(Emb,[em,bem,qem,for]),
    roles(Sym,Cat,[Role2,Role1],Att1-Att2), !,
@@ -521,7 +545,7 @@ semlex_verb(Cat,Sym,Index,Att1-Att3,Sem):-
    tense(Mood,[],Att2-Att3,TDRS),
    Sem = lam(S,lam(Q,app(TDRS,lam(F,app(Q,lam(Y,app(S,lam(K,DRS)))))))).
 
-semlex_verb(Cat,Sym,Index,Att1-Att3,Sem):-
+semlex_verb(Cat,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
    Cat = (s:Mood\np)/s:_,
    roles(Sym,Cat,[Role2,Role1],Att1-Att2), !,
    att(Att2,sense,Sense),
@@ -1067,9 +1091,18 @@ semlex_verb(Cat,_Sym,Index,Att1-Att2,Sem):-
            "it is ADJ for S"
 ------------------------------------------------------------------------- */
 
-semlex_verb(Cat,Sym,Index,Att-Att,Sem):-
+semlex_verb(Cat,Sym,Index,Att-[sem:'UNK'|Att],Sem):-
+   option('--semantics',amr),
    Cat = ((s:adj\np)/s:em)/(s:adj\np), !,
-   att(Att,sense,Sense),
+   Sem = lam(AP,lam(S,lam(Q,lam(E,app(app(AP,Q),lam(Y,merge(app(S,lam(X,B:drs([B:[]:F],[B:[]:pred(F,'cause',v,1),
+                                                                                        B:Index:pred(Y,Sym,r,2),
+                                                                                        B:[]:role(F,Y,'ARG0',1),
+                                                                                        B:[]:role(F,X,'ARG1',1)]))),
+                                                            app(E,Y)))))))).
+
+semlex_verb(Cat,Sym,Index,Att1-[sem:'IST'|Att2],Sem):-
+   Cat = ((s:adj\np)/s:em)/(s:adj\np), !,
+   att(Att1,sense,Sense),
    Sem = lam(AP,lam(S,lam(Q,lam(E,app(app(AP,Q),lam(Y,merge(app(S,lam(X,B2:drs([],[B2:Index:pred(Y,Sym,a,Sense),
                                                                                    B2:[]:role(Y,X,theme,1)]))),
                                                             app(E,Y)))))))).
