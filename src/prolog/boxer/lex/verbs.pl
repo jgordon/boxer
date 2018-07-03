@@ -335,20 +335,21 @@ semlex_verb(Cat,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
 ------------------------------------------------------------------------- */
 
 semlex_verb(Cat,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
-   member(Cat,[((s:Mood\pp)/np)/np,((s:Mood/pp)/np)/np]),
-   roles(Sym,Cat,[Role2,Role1],Att1-Att2), !,
+   Cat = ((s:Mood\np)/np)/np, !,
+   roles(Sym,Cat,[Role3,Role2,Role1],Att1-Att2),
    att(Att2,sense,Sense),
    DRS = merge(B:drs([B:[]:E],
                      [B:Index:pred(E,Sym,v,Sense),
-                      B:[]:role(E,Y,Role1,1),
-                      B:[]:role(E,X,Role2,1)]),
-               merge(app(PP,E),
-                     app(P,E))),
+                      B:[]:role(E,X,Role1,1),
+                      B:[]:role(E,Y,Role2,1),
+                      B:[]:role(E,Z,Role3,1)]),
+               app(P,E)),
    tense(Mood,[],Att2-Att3,TDRS),
-   Sem = lam(NP1,lam(NP2,lam(PP,app(TDRS,
-                                    lam(P,app(NP2,
-                                              lam(Y,app(NP1,
-                                                        lam(X,DRS))))))))).
+   Sem = lam(NP3,lam(NP2,lam(NP1,app(TDRS,
+                                     lam(P,app(NP1,
+                                               lam(X,app(NP2,
+                                                         lam(Y,app(NP3,
+                                                                   lam(Z,DRS))))))))))).
 
 /* -------------------------------------------------------------------------
    Ditransitive (np V np pp)
