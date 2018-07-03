@@ -8,8 +8,7 @@
 :- use_module(semlib(options),[option/2]).
 :- use_module(library(lists),[member/2]).
 :- use_module(lex(tense),[tense/4,aspect/5]).
-:- use_module(boxer(categories),[category/4,
-				 roles/4,att/3,category_type/5]).
+:- use_module(boxer(categories),[category/4,roles/4,att/3,category_type/5]).
 :- use_module(boxer(closure),[plosing/1]).
 
 
@@ -418,16 +417,17 @@ semlex_verb(Cat,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
    Ditransitive (pp V np np)
 ------------------------------------------------------------------------- */
 
-semlex_verb(Cat,Sym,Index,Att1-Att2,Sem):-
-   category_type(Cat,Sym,ppVnpnp,[Role1,Role2],Mood), !,
-   att(Att1,sense,Sense),
+semlex_verb(Cat,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
+   member(Cat,[((s:Mood\pp)/np)/np,((s:Mood/pp)/np)/np]),
+   roles(Sym,Cat,[Role2,Role1],Att1-Att2), !,
+   att(Att2,sense,Sense),
    DRS = merge(B:drs([B:[]:E],
                      [B:Index:pred(E,Sym,v,Sense),
                       B:[]:role(E,Y,Role1,1),
                       B:[]:role(E,X,Role2,1)]),
                merge(app(PP,E),
                      app(P,E))),
-   tense(Mood,[],Att1-Att2,TDRS),
+   tense(Mood,[],Att2-Att3,TDRS),
    Sem = lam(NP1,lam(NP2,lam(PP,app(TDRS,
                                     lam(P,app(NP2,
                                               lam(Y,app(NP1,
@@ -437,16 +437,17 @@ semlex_verb(Cat,Sym,Index,Att1-Att2,Sem):-
    Ditransitive (pp V np pp)
 ------------------------------------------------------------------------- */
 
-semlex_verb(Cat,Sym,Index,Att1-Att2,Sem):-
-   category_type(Cat,Sym,ppVnppp,[Role],Mood), !,
-   att(Att1,sense,Sense),
+semlex_verb(Cat,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
+   member(Cat,[((s:Mood\pp)/pp)/np,((s:Mood/pp)/pp)/np]),
+   roles(Sym,Cat,[Role],Att1-Att2), !,
+   att(Att2,sense,Sense),
    DRS = merge(B:drs([B:[]:E],
                      [B:Index:pred(E,Sym,v,Sense),
                       B:[]:role(E,Y,Role,1)]),
                merge(app(PP1,E),
                      merge(app(PP2,E),
                            app(P,E)))),
-   tense(Mood,[],Att1-Att2,TDRS),
+   tense(Mood,[],Att2-Att3,TDRS),
    Sem = lam(NP,lam(PP1,lam(PP2,app(TDRS,
                                     lam(P,app(NP,
                                               lam(Y,DRS))))))).
@@ -460,7 +461,7 @@ semlex_verb(Cat,Sym,Index,Att1-Att2,Sem):-
    Tritransitive (np V np pp pp)
 ------------------------------------------------------------------------- */
 
-semlex_verb(Cat,Sym,Index,Att1-Att3,Sem):-
+semlex_verb(Cat,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
    Cat = (((s:Mood\np)/pp)/pp)/np,
    roles(Sym,Cat,[Role2,Role1],Att1-Att2), !,
    att(Att2,sense,Sense),
@@ -477,7 +478,7 @@ semlex_verb(Cat,Sym,Index,Att1-Att3,Sem):-
                                                        lam(Y,app(NP1,
                                                                  lam(X,DRS)))))))))).
 
-semlex_verb(Cat,Sym,Index,Att1-Att3,Sem):-
+semlex_verb(Cat,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
    Cat = (((s:Mood\np)/pp)/np)/pp,
    roles(Sym,Cat,[Role2,Role1],Att1-Att2), !,
    att(Att2,sense,Sense),
@@ -534,9 +535,10 @@ semlex_verb(Cat,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
    Intransitive (np V pp s)
 ------------------------------------------------------------------------- */
 
-semlex_verb(Cat,Sym,Index,Att1-Att2,Sem):-
-   category_type(Cat,Sym,npVpps,[Role1,Role2],Mood), !,
-   att(Att1,sense,Sense),
+semlex_verb(Cat,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
+   Cat = ((s:Mood\np)/s:_)/pp,
+   roles(Sym,Cat,[Role2,Role1],Att1-Att2), !,
+   att(Att2,sense,Sense),
    plosing(CC),
    DRS = merge(B:drs([B:[]:E,B:[]:A],
                      [B:Index:pred(E,Sym,v,Sense),
@@ -544,7 +546,7 @@ semlex_verb(Cat,Sym,Index,Att1-Att2,Sem):-
                       B:[]:role(E,A,Role2,1),
                       B:[]:prop(A,app(S,CC))]),
                merge(app(PP,E),app(F,E))),
-   tense(Mood,[],Att1-Att2,TDRS),
+   tense(Mood,[],Att2-Att3,TDRS),
    Sem = lam(PP,lam(S,lam(Q,app(TDRS,lam(F,app(Q,lam(Y,DRS))))))).
 
 /* -------------------------------------------------------------------------
@@ -602,18 +604,19 @@ semlex_verb(Cat,Sym,Index,Att1-Att2,Sem):-
    Transitive (s np V np)
 ------------------------------------------------------------------------- */
 
-semlex_verb(Cat,Sym,Index,Att1-Att2,Sem):-
-   category_type(Cat,Sym,snpVnp,[Role1,Role2,Role3],Mood), !,
+semlex_verb(Cat,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
+   member(Cat, [((s:Mood\s:_)\np)/np]),
+   roles(Sym,Cat,[Role3,Role2,Role1],Att1-Att2), !,
    plosing(CC),
-   att(Att1,sense,Sense),
+   att(Att2,sense,Sense),
    DRS = merge(B:drs([B:[]:E,B:[]:A],
                      [B:Index:pred(E,Sym,v,Sense),
-                      B:[]:role(E,Y,Role2,1),
+                      B:[]:role(E,Y,Role1,1),
                       B:[]:role(E,Z,Role3,1),
-                      B:[]:role(E,A,Role1,1),
+                      B:[]:role(E,A,Role2,1),
                       B:[]:prop(A,app(S,CC))]),
                app(F,E)),
-   tense(Mood,[],Att1-Att2,TDRS),
+   tense(Mood,[],Att2-Att3,TDRS),
    Sem = lam(R,lam(Q,lam(S,app(TDRS,lam(F,app(R,lam(Z,app(Q,lam(Y,DRS))))))))).
 
 
@@ -653,27 +656,29 @@ semlex_verb(Cat,Sym,Index,Att1-Att2,Sem):-
    Transitive (np V vp np)
 ------------------------------------------------------------------------- */
 
-semlex_verb(Cat,Sym,Index,Att1-Att2,Sem):-
-   category_type(Cat,Sym,npVvpnp,[Role1,Role2],Mood), !,
+semlex_verb(Cat,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
+   Cat = ((s:Mood\np)/np)/(s:_\np),
+   roles(Sym,(s:Mood\np)/s:_,[Role2,Role1],Att1-Att2), !,
    plosing(CC),
-   att(Att1,sense,Sense),
+   att(Att2,sense,Sense),
    DRS = merge(B:drs([B:[]:E,B:[]:Z],
                      [B:Index:pred(E,Sym,v,Sense),
                       B:[]:role(E,X,Role1,1),
                       B:[]:role(E,Z,Role2,1),
                       B:[]:prop(Z,app(app(VP,NP2),CC))]),
                app(F,E)),
-   tense(Mood,[],Att1-Att2,TDRS),
+   tense(Mood,[],Att2-Att3,TDRS),
    Sem = lam(VP,lam(NP2,lam(NP1,app(TDRS,lam(F,app(NP1,lam(X,DRS))))))).
 
 /* -------------------------------------------------------------------------
    Transitive (np V vp pp)
 ------------------------------------------------------------------------- */
 
-semlex_verb(Cat,Sym,Index,Att1-Att2,Sem):-
-   category_type(Cat,Sym,npVvppp,[Role],Mood), !,
-   att(Att1,sense,Sense),
-   tense(Mood,[],Att1-Att2,TDRS),
+semlex_verb(Cat,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
+   Cat = ((s:Mood\np)/pp)/(s:adj\np),
+   roles(Sym,s:Mood\np,[Role],Att1-Att2), !,
+   att(Att2,sense,Sense),
+   tense(Mood,[],Att2-Att3,TDRS),
    Sem = lam(VP,lam(PP,lam(NP,app(TDRS,lam(F,app(NP,lam(X,merge(B:drs([B:[]:E],
                                                                       [B:Index:pred(E,Sym,v,Sense),
                                                                        B:[]:role(E,X,Role,1)]),
@@ -681,14 +686,16 @@ semlex_verb(Cat,Sym,Index,Att1-Att2,Sem):-
                                                                       merge(app(app(VP,lam(P,app(P,E))),F),
                                                                             app(F,E))))))))))).
 
+
 /* -------------------------------------------------------------------------
    Transitive (np V pp vp)
 ------------------------------------------------------------------------- */
 
-semlex_verb(Cat,Sym,Index,Att1-Att2,Sem):-
-   category_type(Cat,Sym,npVppvp,[Role],Mood), !,
-   att(Att1,sense,Sense),
-   tense(Mood,[],Att1-Att2,TDRS),
+semlex_verb(Cat,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
+   Cat = ((s:Mood\np)/(s:adj\np))/pp,
+   roles(Sym,s:Mood\np,[Role],Att1-Att2), !,
+   att(Att2,sense,Sense),
+   tense(Mood,[],Att2-Att3,TDRS),
    Sem = lam(PP,lam(AP,lam(NP,app(TDRS,lam(F,app(NP,lam(X,merge(B:drs([B:[]:E],
                                                                       [B:Index:pred(E,Sym,v,Sense),
                                                                        B:[]:role(E,X,Role,1)]),
@@ -881,21 +888,21 @@ semlex_verb(Cat,Sym,Index,Att1-[semtag:'EXS'|Att3],Sem):-
    tense(Mood,[],Att2-Att3,TDRS),
    Sem = lam(Q2,lam(V,lam(Q1,app(TDRS,lam(F,app(Q1,lam(X,app(Q2,lam(Y,DRS))))))))).
 
-
-semlex_verb(Cat,Sym,Index,Att1-Att2,Sem):-
+semlex_verb(((s:Mood\np)/(s:Com\np))/np,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
    member(Sym,[promise,offer,use]),
-   category(socv,Cat,[Role1,Role2],Mood), !,
+   member(Com,[b,ng,adj,pss,pt]),
+   roles(Sym,((s:Mood\np)/s:_)/np,[Role3,Role2,Role1],Att1-Att2), !,
    plosing(CC),
-   att(Att1,sense,Sense),
+   att(Att2,sense,Sense),
    Modal = B1:drs([B1:[]:A],
-                  [B1:[]:role(E,A,theme,1),
+                  [B1:[]:role(E,A,Role3,1),
                    B1:[]:prop(A,app(app(V,lam(R,app(R,X))),CC))]),
    DRS = merge(B2:drs([B2:[]:E],
                       [B2:Index:pred(E,Sym,v,Sense),
                        B2:[]:role(E,Y,Role2,1),
                        B2:[]:role(E,X,Role1,1)]),
                merge(Modal,app(F,E))),
-   tense(Mood,[],Att1-Att2,TDRS),
+   tense(Mood,[],Att2-Att3,TDRS),
    Sem = lam(Q2,lam(V,lam(Q1,app(TDRS,lam(F,app(Q1,lam(X,app(Q2,lam(Y,DRS))))))))).
 
 
@@ -903,31 +910,32 @@ semlex_verb(Cat,Sym,Index,Att1-Att2,Sem):-
    Object Control Verbs (ECM, exceptional case marking)
 ------------------------------------------------------------------------- */
 
-semlex_verb(Cat,Sym,Index,Att1-Att3,Sem):-
+semlex_verb(Cat,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
    Cat = ((s:Mood\np)/(s:to\np))/np, \+ Mood = to,
-   roles(Sym,((s:Mood\np)/np)/np,[Role1,Role2,Role3],Att1-Att2), !,
+   roles(Sym,((s:Mood\np)/s:_)/np,[Role3,Role2,Role1],Att1-Att2), !,
    att(Att2,sense,Sense),
    DRS = app(app(V,lam(P,app(P,Y))),lam(Z,merge(B1:drs([B1:[]:E],
                                                        [B1:Index:pred(E,Sym,v,Sense),
-                                                        B1:[]:role(E,X,Role3,1),
-                                                        B1:[]:role(E,Y,Role2,1),
-                                                        B1:[]:role(E,Z,Role1,1)]),app(F,E)))),
+                                                        B1:[]:role(E,X,Role1,1),
+                                                        B1:[]:role(E,Y,Role3,1),
+                                                        B1:[]:role(E,Z,Role2,1)]),app(F,E)))),
    tense(Mood,[],Att2-Att3,TDRS),
    Sem = lam(Q2,lam(V,lam(Q1,app(TDRS,lam(F,app(Q1,lam(X,app(Q2,lam(Y,DRS))))))))).
 
-semlex_verb(Cat,Sym,Index,Att1-Att2,Sem):-
-   category(socv,Cat,[Role1,Role2],Mood), !,   %%% not to-complement (see above)
+semlex_verb(((s:Mood\np)/(s:Com\np))/np,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
+   member(Com,[b,ng,adj,pss,pt]),
+   roles(Sym,((s:Mood\np)/s:_)/np,[Role3,Role2,Role1],Att1-Att2), !,
    plosing(CC),
-   att(Att1,sense,Sense),
+   att(Att2,sense,Sense),
    Modal = B1:drs([B1:[]:A],
-                  [B1:[]:role(E,A,theme,1),
+                  [B1:[]:role(E,A,Role3,1),
                    B1:[]:prop(A,app(app(V,lam(R,app(R,Y))),CC))]),
    DRS = merge(B1:drs([B1:[]:E],
                       [B1:Index:pred(E,Sym,v,Sense),
                        B1:[]:role(E,Y,Role2,1),
                        B1:[]:role(E,X,Role1,1)]),
                merge(Modal,app(F,E))),
-   tense(Mood,[],Att1-Att2,TDRS),
+   tense(Mood,[],Att2-Att3,TDRS),
    Sem = lam(Q2,lam(V,lam(Q1,app(TDRS,lam(F,app(Q1,lam(X,app(Q2,lam(Y,DRS))))))))).
 
 
@@ -935,7 +943,7 @@ semlex_verb(Cat,Sym,Index,Att1-Att2,Sem):-
    Object Control Verbs subcatting PP
 ------------------------------------------------------------------------- */
 
-semlex_verb(Cat,Sym,Index,Att1-Att3,Sem):-
+semlex_verb(Cat,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
    Cat = ((s:Mood\np)/(s:to\np))/pp, \+ Mood = to,
    roles(Sym,((s:Mood\np)/np)/pp,[Role1,Role2],Att1-Att2), !,
    att(Att2,sense,Sense),
@@ -951,20 +959,21 @@ semlex_verb(Cat,Sym,Index,Att1-Att3,Sem):-
    make NP ADJ to VP
 ------------------------------------------------------------------------- */
 
-semlex_verb(Cat,Sym,Index,Att1-Att2,Sem):-
+semlex_verb(Cat,Sym,Index,Att1-[sem:'EXS'|Att3],Sem):-
    Cat = (((s:Mood\np)/(s:to\np))/(s:adj\np))/np, !,
    plosing(CC),
    att(Att1,sense,Sense),
+   roles(Sym,((s:Mood\np)/s:_)/np,[Role3,Role2,Role1],Att1-Att2),
    Modal = merge(B1:drs([B1:[]:A],
-                        [B1:[]:role(E,A,theme,1),
+                        [B1:[]:role(E,A,Role3,1),
                          B1:[]:prop(A,app(app(V,lam(R,app(R,Y))),CC))]),
                  app(app(AP,lam(P,app(P,A))),CC)),
    DRS = merge(B2:drs([B2:[]:E],
                       [B2:Index:pred(E,Sym,v,Sense),
-                       B2:[]:role(E,Y,patient,1),
-                       B2:[]:role(E,X,agent,1)]),
+                       B2:[]:role(E,Y,Role2,1),
+                       B2:[]:role(E,X,Role1,1)]),
                merge(Modal,app(F,E))),
-   tense(Mood,[],Att1-Att2,TDRS),
+   tense(Mood,[],Att2-Att3,TDRS),
    Sem = lam(Q2,lam(AP,lam(V,lam(Q1,app(TDRS,lam(F,app(Q1,lam(X,app(Q2,lam(Y,DRS)))))))))).
 
 semlex_verb(Cat,Sym,Index,Att1-Att2,Sem):-
@@ -1040,13 +1049,14 @@ semlex_verb(Cat,Sym,Index,Att1-Att3,Sem):-
    Copula  "it is ADJ to-VP"
 ------------------------------------------------------------------------- */
 
-semlex_verb(Cat,_Sym,Index,Att1-Att2,Sem):-
-   Cat = ((s:Mood\np)/(s:to\np))/(s:adj\np), !,
-   tense(Mood,Index,Att1-Att2,TDRS),
+semlex_verb(Cat,Sym,Index,Att1-Att3,Sem):-
+   Cat = ((s:Mood\np)/(s:to\np))/(s:adj\np),
+   roles(Sym,(s:Mood\np)/s:_,[Role,_],Att1-Att2), !,
+   tense(Mood,Index,Att2-Att3,TDRS),
    Sem = lam(AP,lam(VP,lam(NP,app(TDRS,lam(E,DRS))))),
    DRS = app(app(AP,NP),
              lam(X,app(app(VP,lam(P,merge(B1:drs([B1:[]:X],[]),app(P,X)))),
-                       lam(F,merge(B3:drs([],[B3:[]:role(X,F,theme,1)]),app(E,X)))))).
+                       lam(F,merge(B3:drs([],[B3:[]:role(X,F,Role,1)]),app(E,X)))))).
 
 
 /* -------------------------------------------------------------------------
