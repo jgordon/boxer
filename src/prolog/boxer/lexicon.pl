@@ -736,7 +736,7 @@ semlex( np_thr, _Lemma,Index,Att-Att,Sem):- !,
    NP Why
 ------------------------------------------------------------------------- */
 
-semlex( np, Lemma,Index,Att-Att,Sem):-
+semlex( np, Lemma,Index,Att-[sem:'QUE'|Att],Sem):-
    Lemma = 'why', !,
    Sem = lam(P,B1:drs([],[B1:[]:duplex(whq,
                                      B2:drs([B2:[]:X],[B2:Index:pred(X,reason,n,2)]),
@@ -748,12 +748,12 @@ semlex( np, Lemma,Index,Att-Att,Sem):-
    NP (all others)
 ------------------------------------------------------------------------- */
 
-semlex(np,Sym,Index,Att-Att,Sem):-
+semlex(np,Sym,Index,Att-[sem:Tag|Att],Sem):-
    att(Att,pos,Pos), member(Pos,['NNP','NNPS']), !,
-   att(Att,namex,Ne), neClassType(Ne,Class,Type),
+   att(Att,namex,Ne), neClassType(Ne,Class,Type,Tag),
    Sem = lam(P,alfa(nam,B:drs([B:[]:X],[B:Index:named(X,Sym,Class,Type)]),app(P,X))).
 
-semlex(np,Sym,Index,Att-Att,Sem):- !,
+semlex(np,Sym,Index,Att-[sem:'CON'|Att],Sem):- !,
    att(Att,sense,Sense),
    Sem = lam(P,merge(B:drs([B:[]:X],[B:Index:pred(X,Sym,n,Sense)]),app(P,X))).
 
@@ -762,7 +762,7 @@ semlex(np,Sym,Index,Att-Att,Sem):- !,
    NP/PP
 ------------------------------------------------------------------------- */
 
-semlex(np/pp, Sym,Index,Att-Att,Sem):- !,
+semlex(np/pp, Sym,Index,Att-[sem:'ROL'|Att],Sem):- !,
    att(Att,sense,Sense),
    Sem = lam(PP,lam(P,merge(B:drs([B:[]:X],[B:Index:pred(X,Sym,n,Sense)]),
                             merge(app(P,X),app(PP,X))))).
@@ -773,22 +773,22 @@ semlex(np/pp, Sym,Index,Att-Att,Sem):- !,
    Question words: whose
 ------------------------------------------------------------------------- */
 
-semlex(Cat,whose,Index,Att-Att,Sem):-
+semlex(Cat,whose,Index,Att-[sem:'QUE'|Att],Sem):-
    member(Cat,[(s:wq/(s:dcl\np))/n,
                (s:wq/(s:q/np))/n,
                (s:wq\(s:dcl/np))/n]), !,
    Sem = lam(N,lam(V,app(V,lam(P,B1:drs([],[B1:[]:duplex(whq,
-                                                   merge(merge(B2:drs([B2:[]:Y],[]),app(N,Y)),
-                                                               B3:drs([B3:[]:X],[B3:Index:pred(X,person,n,1),[]:rel(Y,X,of,0)])),
-                                                   X,
-                                                   app(P,Y))]))))).
+                                                         merge(merge(B2:drs([B2:[]:Y],[]),app(N,Y)),
+                                                               B3:drs([B3:[]:X],[B3:Index:pred(X,person,n,1),B3:[]:rel(Y,X,of,1)])),
+                                                         X,
+                                                         app(P,Y))]))))).
 
 
 /* -------------------------------------------------------------------------
    Question words: which/what N
 ------------------------------------------------------------------------- */
 
-semlex(Cat,_Sym,Index,Att-Att,Sem):-
+semlex(Cat,_Sym,Index,Att-[sem:'QUE'|Att],Sem):-
    member(Cat,[(s:wq/(s:dcl\np))/n,
                (s:wq/(s:q/np))/n,
                (s:qem/(s:dcl\np))/n,
@@ -799,7 +799,7 @@ semlex(Cat,_Sym,Index,Att-Att,Sem):-
                                              X4,
                                              app(P3,X4))]))))).
 
-semlex(Cat,_Sym,Index,Att-Att,Sem):-
+semlex(Cat,_Sym,Index,Att-[sem:'QUE'|Att],Sem):-
    Cat = (s:wq/(s:q/pp))/n, !,  % WH-DET N + YNQ
    Sem = lam(N,lam(V,lam(E,B1:drs([],[B1:[]:duplex(whq,
                                               merge(B2:drs([B2:[]:X],[]),app(N,X)),
@@ -811,7 +811,7 @@ semlex(Cat,_Sym,Index,Att-Att,Sem):-
    Question words: how much/many
 ------------------------------------------------------------------------- */
 
-semlex(Cat,_Sym,Index,Att-Att,Sem):-
+semlex(Cat,_Sym,Index,Att-[sem:'QUE'|Att],Sem):-
    member(Cat,[(s:wq/(s:q/np))/np,
                (s:wq/(s:dcl\np))/np]), !,
    Sem = lam(NP,lam(VP,lam(E,B1:drs([],[B1:[]:duplex(whq,
@@ -826,7 +826,7 @@ semlex(Cat,_Sym,Index,Att-Att,Sem):-
    Question words: how much/many N
 ------------------------------------------------------------------------- */
 
-semlex(Cat,_Sym,Index,Att-Att,Sem):-
+semlex(Cat,_Sym,Index,Att-[sem:'QUE'|Att],Sem):-
    member(Cat,[((s:wq/(s:q/np))/n)/(np/n),
                ((s:wq/(s:dcl\np))/n)/(np/n)]), !,
    Sem = lam(D,lam(N,lam(VP,lam(E,B1:drs([],[B1:[]:duplex(whq,
@@ -835,7 +835,7 @@ semlex(Cat,_Sym,Index,Att-Att,Sem):-
                                                     Y,
                                                     app(app(VP,lam(P,app(P,X))),E))]))))).
 
-semlex(Cat,_Sym,Index,Att-Att,Sem):-
+semlex(Cat,_Sym,Index,Att-[sem:'QUE'|Att],Sem):-
    member(Cat,[((s:wq/(s:q/pp))/n)/(np/n),
                ((s:wq/(s:dcl\pp))/n)/(np/n)]), !,
    Sem = lam(D,lam(N,lam(VP,lam(E,B1:drs([],[B1:[]:duplex(whq,
@@ -844,7 +844,7 @@ semlex(Cat,_Sym,Index,Att-Att,Sem):-
                                                     Y,
                                                     app(app(VP,lam(Y,B4:drs([],[B4:[]:rel(Y,X,rel,0)]))),E))]))))).
 
-semlex(Cat,_Sym,Index,Att-Att,Sem):-
+semlex(Cat,_Sym,Index,Att-[sem:'QUE'|Att],Sem):-
    member(Cat,[(((s:wq/pp)/((s:q/pp)/np))/n)/(np/n)]), !,
    Sem = lam(D,lam(N,lam(TV,lam(PP,lam(E,B1:drs([],[B1:[]:duplex(whq,
                                                            merge(B2:drs([B2:[]:X,B2:[]:Y],[B2:Index:card(X,Y,eq)]),
@@ -853,7 +853,7 @@ semlex(Cat,_Sym,Index,Att-Att,Sem):-
                                                            app(app(app(TV,lam(P,app(P,X))),PP),E))])))))).
 
 
-semlex(((s:wq/pp)/n)/(np/n),_Sym,Index,Att-Att,Sem):- !,  % American English dialect (How many feet in a mile?)
+semlex(((s:wq/pp)/n)/(np/n),_Sym,Index,Att-[sem:'QUE'|Att],Sem):- !,  % American English dialect (How many feet in a mile?)
    Sem = lam(D,lam(N,lam(PP,lam(_,B1:drs([],[B1:[]:duplex(whq,
                                                     merge(B2:drs([B2:[]:X,B2:[]:Y],[Index:card(X,Y,eq)]),
                                                           app(app(D,N),lam(Z,B3:drs([],[B3:[]:eq(X,Z)])))),
@@ -861,7 +861,7 @@ semlex(((s:wq/pp)/n)/(np/n),_Sym,Index,Att-Att,Sem):- !,  % American English dia
                                                     app(PP,X))]))))).
 
 
-semlex(Cat,_Sym,Index,Att-Att,Sem):-
+semlex(Cat,_Sym,Index,Att-[sem:'QUE'|Att],Sem):-
    member(Cat,[(((s:wq/(s:pss\np))/((s:q/(s:pss\np))/np))/n)/(np/n)]),
    Sem = lam(D,lam(N,lam(_,lam(VP,lam(E,B1:drs([],[B1:[]:duplex(whq,
                                                           merge(B2:drs([B2:[]:X,B2:[]:Y],[B2:Index:card(X,Y,eq)]),
@@ -875,7 +875,7 @@ semlex(Cat,_Sym,Index,Att-Att,Sem):-
    Question words: how ADJ
 ------------------------------------------------------------------------- */
 
-semlex(Cat,_Sym,Index,Att-Att,Sem):-
+semlex(Cat,_Sym,Index,Att-[sem:'QUE'|Att],Sem):-
    member(Cat,[(s:wq/(s:q/(s:adj\np)))/(s:adj\np),
                ((s:wq/pp)/((s:q/pp)/(s:adj\np)))/(s:adj\np),
                (s:qem/(s:dcl/(s:adj\np)))/(s:adj\np)]), !, % How ADJ
@@ -886,7 +886,7 @@ semlex(Cat,_Sym,Index,Att-Att,Sem):-
                                                                        B3:drs([],[B3:[]:rel(Y,X,of,0)]))])))))))).
 
 
-semlex(Cat,_Sym,Index,Att-Att,Sem):-
+semlex(Cat,_Sym,Index,Att-[sem:'QUE'|Att],Sem):-
    Cat = (s:wq/(s:q/pp))/(s:adj\np), !, % How often does...
    closing(CC),
    Sem = lam(A,lam(VP,lam(F,B1:drs([],[B1:[]:duplex(whq,
@@ -962,7 +962,7 @@ semlex(Cat,_Sym,Index,Att-[sem:'QUE'|Att],Sem):-
                                               merge(app(app(VP,lam(R,app(R,X))),CC),app(P,X)))])))).
 
 
-semlex(s:wq/s:q,Sym,Index,Att-Att,Sem):-
+semlex(s:wq/s:q,Sym,Index,Att-[sem:'QUE'|Att],Sem):-
    ( Sym=how,   Pred=manner,       Sense=2 ;
      Sym=where, Pred=location,     Sense=1 ;
      Sym=when,  Pred=unit_of_time, Sense=1 ;
@@ -974,7 +974,7 @@ semlex(s:wq/s:q,Sym,Index,Att-Att,Sem):-
                                                        X,
                                                        merge(B3:drs([],[B3:[]:rel(F,X,rel,0)]),app(E,F)))]))))).
 
-semlex(s:qem/(s:to\np),_,Index,Att-Att,Sem):- !,
+semlex(s:qem/(s:to\np),_,Index,Att-[sem:'QUE'|Att],Sem):- !,
    Sem = lam(VP,lam(E,app(app(VP,lam(P,merge(B1:drs([B1:[]:X],[]),app(P,X)))),lam(F,merge(B2:drs([],[B2:Index:pred(F,manner,n,2)]),app(E,F)))))). % how to
 
 % whose
@@ -2529,16 +2529,33 @@ semlex(Cat,_,Index,Att-Att,Sem):-
    Emphasising Pronouns
 ------------------------------------------------------------------------- */
 
-semlex(np\np, himself,Index,Att-Att,Sem):- !,
+semlex(np\np, himself,Index,Att-[sem:'EMP'|Att],Sem):-
+   option('--semantics',amr), !,
+   Sem = lam(Q,lam(P,app(Q,lam(X,merge(B:drs([],[B:Index:pred(X,he,n,1)]),app(P,X)))))).
+
+semlex(np\np, himself,Index,Att-[sem:'EMP'|Att],Sem):- !,
    Sem = lam(Q,lam(P,app(Q,lam(X,merge(B:drs([],[B:Index:pred(X,male,n,2)]),app(P,X)))))).
 
-semlex(np\np, herself,Index,Att-Att,Sem):- !,
+semlex(np\np, herself,Index,Att-[sem:'EMP'|Att],Sem):-
+   option('--semantics',amr), !,
+   Sem = lam(Q,lam(P,app(Q,lam(X,merge(B:drs([],[B:Index:pred(X,she,n,1)]),app(P,X)))))).
+
+semlex(np\np, herself,Index,Att-[sem:'EMP'|Att],Sem):- !,
    Sem = lam(Q,lam(P,app(Q,lam(X,merge(B:drs([],[B:Index:pred(X,female,n,2)]),app(P,X)))))).
 
-semlex(np\np, itself,Index,Att-Att,Sem):- !,
+semlex(np\np, itself,Index,Att-[sem:'EMP'|Att],Sem):-
+   option('--semantics',amr), !,
+   Sem = lam(Q,lam(P,app(Q,lam(X,merge(B:drs([],[B:Index:pred(X,it,n,1)]),app(P,X)))))).
+
+semlex(np\np, itself,Index,Att-[sem:'EMP'|Att],Sem):- !,
    Sem = lam(Q,lam(P,app(Q,lam(X,merge(B:drs([],[B:Index:pred(X,thing,n,12)]),app(P,X)))))).
 
-semlex(np\np, Sym,Index,Att-Att,Sem):-
+semlex(np\np, Sym,Index,Att-[sem:'EMP'|Att],Sem):-
+   option('--semantics',amr),
+   member(Sym,[myself,yourself,thyself,ourselves,themselves]), !,
+   Sem = lam(Q,lam(P,app(Q,lam(X,merge(B:drs([],[B:Index:pred(X,we,n,1)]),app(P,X)))))).
+
+semlex(np\np, Sym,Index,Att-[sem:'EMP'|Att],Sem):-
    member(Sym,[myself,yourself,thyself,ourselves,themselves]), !,
    Sem = lam(Q,lam(P,app(Q,lam(X,merge(B:drs([],[B:Index:pred(X,person,n,1)]),app(P,X)))))).
 
@@ -3178,4 +3195,3 @@ notSymbol(not).
 notSymbol('n\'t').
 notSymbol('\'t').
 notSymbol(nor).
-notSymbol(never):- option('--x',true).
