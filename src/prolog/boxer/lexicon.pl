@@ -1562,27 +1562,33 @@ semlex(s:qem/s:dcl,Sym,Index,Att-Att,Sem):-
    Complementizers
 ------------------------------------------------------------------------- */
 
-semlex(Cat,_Sym,Index,Att-Att,Sem):-
+semlex(Cat,_Sym,Index,Att-[sem:'SUB'|Att],Sem):-
    member(Cat,[s:em/s:dcl,s:bem/s:b,s:em/s:b,s:qem/s:dcl]), !,
-   closing(CC),
+   plosing(CC),
    Sem = lam(S,lam(E,merge(B:drs([B:Index:K],
                                  [B:[]:prop(K,app(S,CC))]),
                            app(E,K)))).
 
-semlex(Cat,_,Index,Att-Att,Sem):-
+% it is illegal for children to smoke
+%
+semlex(Cat,_,_Index,Att-[sem:'SUB'|Att],Sem):-
    Cat = (s:for/(s:to\np))/np, !,
-   closing(CC),
-   Sem = lam(NP,lam(VP,lam(E,merge(B:drs([B:Index:K],
-                                         [B:[]:prop(K,app(app(VP,NP),CC))]),
-                                   app(E,K))))).
+   Sem = lam(NP,lam(VP,app(VP,NP))).
 
-semlex(Cat,_Sym,_Index,Att-Att,Sem):-
+%semlex(Cat,_,Index,Att-[sem:'UNK'|Att],Sem):-
+%   Cat = (s:for/(s:to\np))/np, !,
+%   plosing(CC),
+%   Sem = lam(NP,lam(VP,lam(E,merge(B:drs([B:Index:K],
+%                                         [B:[]:prop(K,app(app(VP,NP),CC))]),
+%                                   app(E,K))))).
+
+semlex(Cat,_Sym,_Index,Att-[sem:'NIL'|Att],Sem):-
    category(comp,Cat,_), !,
    Sem = lam(S,lam(F,app(S,F))).
 
-semlex(Cat,_,Index,Att-Att,Sem):-
+semlex(Cat,_,Index,Att-[sem:'SUB'|Att],Sem):-
    Cat = np/s:dcl, !,
-   closing(CC),
+   plosing(CC),
    Sem = lam(S,lam(P,merge(B:drs([B:Index:X],
                                  [B:[]:prop(X,app(S,CC))]),
                            app(P,X)))).
@@ -1618,23 +1624,30 @@ semlex(Cat,Sym,Index,Att1-[sem:'NOT'|Att2],Sem):-
    Not
 ------------------------------------------------------------------------- */
 
-semlex(Cat,Sym,Index,Att-Att,Sem):-
+semlex(Cat,Sym,Index,Att-[sem:'NOT'|Att],Sem):-
    category(vpadv,Cat,_),
    option('--semantics',drg),
    notSymbol(Sym), !,
    Sem = lam(X,lam(Q,lam(F,B1:drs([],[B1:[]:not(app(app(X,Q),lam(E,merge(B2:drs([],[B2:Index:pred(E,Sym,s,1)]),app(F,E)))))])))).
 
-semlex(Cat,Sym,Index,Att-Att,Sem):-
+semlex(Cat,Sym,Index,Att-[sem:'NOT'|Att],Sem):-
    category(vpadv,Cat,_),
    notSymbol(Sym),
    option('--x',true), !,
 %  Sem = lam(V,lam(Q,lam(F,app(Q,lam(X,B:drs([],[B:Index:not(app(app(V,lam(P,app(P,X))),F))])))))). %%% subject wide scope (preferred?)
    Sem = lam(X,lam(Q,lam(F,B:drs([],[B:Index:not(app(app(X,Q),F))])))).                             %%% negation wide scope (dispreferred?)
 
-semlex(Cat,Sym,Index,Att-Att,Sem):-
+semlex(Cat,Sym,Index,Att-[sem:'NOT'|Att],Sem):-
    category(vpadv,Cat,_),
    notSymbol(Sym), !,
    Sem = lam(V,lam(Q,lam(F,app(Q,lam(X,B:drs([],[B:Index:not(app(app(V,lam(P,app(P,X))),F))])))))). %%% subject wide scope (preferred?)
+%  Sem = lam(X,lam(Q,lam(F,B:drs([],[B:Index:not(app(app(X,Q),F))])))).                             %%% negation wide scope (dispreferred?)
+
+semlex(Cat,Sym,Index,Att-[sem:'POS'|Att],Sem):-
+   category(vpadv,Cat,_),
+   member(Sym,[perhaps,maybe,possibly]),
+   option('--modal',true), !,
+   Sem = lam(V,lam(Q,lam(F,app(Q,lam(X,B:drs([],[B:Index:pos(app(app(V,lam(P,app(P,X))),F))])))))). %%% subject wide scope (preferred?)
 %  Sem = lam(X,lam(Q,lam(F,B:drs([],[B:Index:not(app(app(X,Q),F))])))).                             %%% negation wide scope (dispreferred?)
 
 
@@ -1642,13 +1655,21 @@ semlex(Cat,Sym,Index,Att-Att,Sem):-
    Cardinals that function as VP modifiers (often wrongly analysed)
 ------------------------------------------------------------------------- */
 
-semlex(Cat,Sym,Index,Att1-Att2,Sem):-
+semlex(Cat,Sym,Index,Att1-[sem:'QUA'|Att2],Sem):-
    att(Att1,pos,'CD'),
    category(vpadv,Cat,_),
    string2digit(Sym,Digit), !,
    rel(for,Att1-Att2,Relation),
    Sem = lam(X,lam(Q,lam(F,app(app(X,Q),lam(E,merge(B:drs([B:[]:X],[B:Index:card(X,Digit,eq),
                                                                     B:[]:rel(E,X,Relation,0)]),app(F,E))))))).
+
+/* -------------------------------------------------------------------------
+   Intensifiers
+------------------------------------------------------------------------- */
+
+semlex((s:adj\np)/(s:adj\np),Sym,Index,Att-[sem:'INT'|Att],Sem):- !,
+   Sem = lam(X,lam(Q,lam(F,app(app(X,Q),lam(E,merge(B:drs([],[B:Index:pred(E,Sym,r,0)]),app(F,E))))))).
+
 
 /* -------------------------------------------------------------------------
    NPs that function as VP modifiers
@@ -1722,13 +1743,29 @@ semlex((s:adj\np)/((s:to\np)/np),Sym,Index,Att-Att,Sem):- !,
 
 % "the" as apposition trigger
 %
-semlex(Cat,the,Index,Att-Att,Sem):-
+semlex(Cat,the,Index,Att-[sem:'APP'|Att],Sem):-
    Cat = (np\np)/n, !,
    Sem = lam(N,lam(Q,lam(P,app(Q,lam(X,merge(B:drs([B:[]:Y],[B:Index:eq(X,Y)]),
                                              merge(app(N,Y),app(P,X)))))))).
 
 % temporal
 %
+semlex(Cat,Sym,Index,Att1-[sem:'PRX'|Att2],Sem):-
+   option('--semantics',amr),
+   member(Sym,[this,those]),
+   Cat = (np\np)/n, !,
+   role(['Time'],Att1-Att2,[Role]),
+   Sem = lam(N,lam(Q,lam(P,app(Q,lam(X,merge(B:drs([B:[]:Y],[B:Index:pred(Y,this,r,2),B:[]:role(X,Y,Role,1)]),
+                                             merge(app(N,Y),app(P,X)))))))).
+
+semlex(Cat,Sym,Index,Att1-[sem:'DST'|Att2],Sem):-
+   option('--semantics',amr),
+   member(Sym,[that,these]),
+   Cat = (np\np)/n, !,
+   role(['Time'],Att1-Att2,[Role]),
+   Sem = lam(N,lam(Q,lam(P,app(Q,lam(X,merge(B:drs([B:[]:Y],[B:Index:pred(Y,that,r,2),B:[]:role(X,Y,Role,1)]),
+                                             merge(app(N,Y),app(P,X)))))))).
+
 semlex(Cat,Sym,Index,Att1-Att2,Sem):-
    member(Sym,[this,that,those,these]),
    Cat = (np\np)/n, !,
@@ -2521,7 +2558,8 @@ semlex(Cat,Sym,Index,Att-Att,Sem):-
    NP modifiers: only
 ------------------------------------------------------------------------- */
 
-semlex(Cat,only,Index,Att-Att,Sem):-
+semlex(Cat,only,Index,Att-[sem:'EXC'|Att],Sem):-
+   \+ option('--semantics',amr),
    member(Cat,[np\np, np/np]), !,
    Sem = lam(NP,lam(P,alfa(fac,merge(B1:drs([B1:Index:Z],[]),
                                      app(NP,lam(X,merge(app(P,X),
@@ -2534,12 +2572,12 @@ semlex(Cat,only,Index,Att-Att,Sem):-
    NP modifiers: negation
 ------------------------------------------------------------------------- */
 
-semlex(Cat,Sym,Index,Att-Att,Sem):-
+semlex(Cat,Sym,Index,Att-[sem:'NOT'|Att],Sem):-
    member(Cat,[np\np, np/np]),
    notSymbol(Sym), !,
    Sem = lam(NP,lam(P,B:drs([],[B:Index:not(app(NP,P))]))).
 
-semlex(Cat,Sym,Index,Att-Att,Sem):-
+semlex(Cat,Sym,Index,Att-[sem:'NOT'|Att],Sem):-
    Cat = (((np\np)/(np\np))/((np\np)/(np\np))),
    notSymbol(Sym), !,
    Sem = lam(A1,lam(A2,lam(NP,lam(P,B:drs([],[B:Index:not(app(app(app(A1,A2),NP),P))]))))).
@@ -2549,7 +2587,7 @@ semlex(Cat,Sym,Index,Att-Att,Sem):-
    NP modifiers
 ------------------------------------------------------------------------- */
 
-semlex(Cat,Sym,Index,Att1-Att2,Sem):-
+semlex(Cat,Sym,Index,Att1-[sem:'DOW'|Att2],Sem):-
    att(Att1,pos,Pos),
    member(Pos,['NNP','NNPS']),
    att(Att1,namex,NE), neClassType(NE,tim,Type),
@@ -2558,7 +2596,7 @@ semlex(Cat,Sym,Index,Att1-Att2,Sem):-
    Sem = lam(Q,lam(P,app(Q,lam(X,merge(B:drs([B:[]:Y],[B:Index:named(Y,Sym,tim,Type),B:[]:rel(X,Y,Relation,0)]),
                                        app(P,X)))))).
 
-semlex(Cat,Sym,Index,Att-Att,Sem):-
+semlex(Cat,Sym,Index,Att-[sem:Tag|Att],Sem):-
    att(Att,pos,Pos),
    member(Pos,['NNP','NNPS']),
    member(Cat,[np\np, np/np]), !,
@@ -2597,7 +2635,7 @@ semlex(Cat,Sym,Index,Att1-Att2,Sem):-
    NP modifiers (superlative contruction)
 ------------------------------------------------------------------------- */
 
-semlex(Cat,Sym,Index,Att-Att,Sem):-
+semlex(Cat,Sym,Index,Att-[sem:'TOP'|Att],Sem):-
    member(Cat,[d/np]), !,
    Sem = lam(X,lam(Y,B:drs([],[B:Index:rel(Y,X,Sym,0)]))).
 
