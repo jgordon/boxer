@@ -7,10 +7,10 @@
 :- use_module(knowledge(ne),[neClass/2,neClassType/3,neClassType/4]).
 :- use_module(knowledge(dates),[month/2,dofm/2,decade/2,year/2]).
 :- use_module(knowledge(punctuation),[punctuation/2]).
-%:-use_module(knowledge(title),[title/2]).
+%:- use_module(knowledge(title),[title/2]).
 %:- use_module(knowledge(negprefix),[negprefix/4]).
 %:- use_module(knowledge(negsuffix),[negsuffix/4]).
-%:-use_module(knowledge(nationality),[nationality/2]).
+%:- use_module(knowledge(nationality),[nationality/2]).
 :- use_module(lex(determiners),[semlex_det/4]).
 :- use_module(lex(verbs),[semlex_verb/5]).
 :- use_module(boxer(closure),[closing/1,plosing/1]).
@@ -722,17 +722,6 @@ semlex( np, Lemma,Index,Att-[sem:'DIS'|Att],Sem):-
 
 
 /* -------------------------------------------------------------------------
-   NP (semantically empty)
-
-semlex( np_exp, _Lemma,Index,Att-Att,Sem):- !,
-   Sem = lam(P,merge(B:drs([B:Index:X],[]),app(P,X))).
-
-semlex( np_thr, _Lemma,Index,Att-Att,Sem):- !,
-   Sem = lam(P,merge(B:drs([B:Index:X],[]),app(P,X))).
-------------------------------------------------------------------------- */
-
-
-/* -------------------------------------------------------------------------
    NP Why
 ------------------------------------------------------------------------- */
 
@@ -999,7 +988,7 @@ semlex(Cat,_,Index,Att-[sem:'QUE'|Att],Sem):-
                                                app(P,X))])))).
 
 % how
-semlex((s:qem/s:dcl)/(s:adj\np),_,Index,Att-Att,Sem):- !,
+semlex((s:qem/s:dcl)/(s:adj\np),_,Index,Att-[sem:'QUE'|Att],Sem):- !,
    Sem = lam(VP,lam(S,app(VP,lam(P,B1:drs([],[B1:[]:duplex(whq,
                                                      merge(B2:drs([B2:[]:X],[B2:Index:pred(X,manner,n,2)]),app(P,X)),
                                                      X,
@@ -1327,11 +1316,11 @@ semlex(d/n,Sym,Index,Att-Att,Sem):- !,
    Superlative: at least/most/best (no idea how to specify semantics)
 ------------------------------------------------------------------------- */
 
-semlex(Cat,Sym,Index,Att-Att,Sem):-
+semlex(Cat,Sym,Index,Att-[sem:'TOP'|Att],Sem):-
    member(Cat,[(s:_/s:_)/(s:asup\np),(np/np)/(s:asup\np)]), !,
    Sem = lam(VP,lam(NP,lam(P,app(app(VP,NP),lam(X,merge(B:drs([],[B:Index:pred(X,Sym,a,0)]),app(P,X))))))).
 
-semlex(Cat,_Sym,_Index,Att-Att,Sem):-
+semlex(Cat,_Sym,_Index,Att-[sem:'NIL'|Att],Sem):-
    member(Cat,[(C/C)/(s:asup\np),
                (C\C)/(s:asup\np),
                (C\C)\(s:asup\np),
@@ -1548,7 +1537,7 @@ semlex(((n/pp)\(n/pp))/n,_,Index,Att-Att,Sem):- !,
    Complementizers (Wh)
 ------------------------------------------------------------------------- */
 
-semlex(s:qem/s:dcl,Sym,Index,Att-Att,Sem):-
+semlex(s:qem/s:dcl,Sym,Index,Att-[sem:'QUE'|Att],Sem):-
    ( Sym=how,   Pred=manner,       Sense=2, Rel=manner_rel;
      Sym=where, Pred=location,     Sense=1, Rel=loc_rel;
      Sym=when,  Pred=unit_of_time, Sense=1, Rel=time_rel;
@@ -1777,8 +1766,8 @@ semlex(Cat,Sym,Index,Att1-Att2,Sem):-
 
 % seven cents a share
 %
-semlex(Cat,Sym,Index,Att1-Att2,Sem):-
-   member(Sym,[a,an]),
+semlex(Cat,Sym,Index,Att1-[sem:'AND'|Att2],Sem):-
+   member(Sym,[a,an,each]),
    Cat = (np\np)/n, !,
    rel(for,Att1-Att2,Relation),
    Sem = lam(N,lam(Q,lam(P,B1:drs([],[B1:[]:imp(merge(B2:drs([B2:[]:Y],[]),
@@ -1786,9 +1775,11 @@ semlex(Cat,Sym,Index,Att1-Att2,Sem):-
                                                 app(Q,lam(X,merge(B3:drs([],[B3:Index:rel(X,Y,Relation,0)]),
                                                                app(P,X)))))])))).
 
-semlex(Cat,Sym,Index,Att-Att,Sem):-
+% To be done: $, another, both, no
+%
+semlex(Cat,_Sym,Index,Att-[sem:'NIL'|Att],Sem):-
    Cat = (np\np)/n, !,
-   Sem = lam(N,lam(Q,lam(P,app(Q,lam(X,merge(B:drs([B:[]:Y],[B:Index:rel(X,Y,Sym,0)]),
+   Sem = lam(N,lam(Q,lam(P,app(Q,lam(X,merge(B:drs([B:[]:Y],[B:Index:rel(X,Y,rel,0)]),
                                              merge(app(N,Y),app(P,X)))))))).
 
 
@@ -1890,20 +1881,20 @@ semlex(Cat,_,Index,Att-Att,Sem):-
 
 % Passive Clause
 %
-semlex(Cat,by,Index,Att1-Att2,Sem):-
+semlex(Cat,by,Index,Att1-[sem:'REL'|Att2],Sem):-
    Cat = ((s:pss\np)\(s:pss\np))/np,
    roles(by,Cat,[Role],Att1-Att2), !,
    Sem = lam(Q2,lam(V,lam(Q,lam(F,app(app(V,Q),lam(E,app(Q2,lam(Y,merge(B:drs([],[B:Index:role(E,Y,Role,1)]),app(F,E)))))))))).
 
 
-semlex(Cat,Tok,Index,Att-Att,Sem):-
+semlex(Cat,Tok,Index,Att-[sem:'NOT'|Att],Sem):-
    Tok = without, Sym = with,
    member(Cat,[((s:X\np)\(s:X\np))/np,
                ((s:X\np)/(s:X\np))/np]), !,
    Sem = lam(Q2,lam(V,lam(Q,lam(F,app(app(V,Q),lam(E,merge(B1:drs([],[B1:Index:not(app(Q2,lam(Y,B2:drs([],[B2:Index:rel(E,Y,Sym,0)]))))]),
                                                            app(F,E)))))))).
 
-semlex(Cat,Sym,Index,Att-Att,Sem):-
+semlex(Cat,Sym,Index,Att-[sem:'RLI'|Att],Sem):-
    member(Cat,[((s:X\np)\(s:X\np))/np,
                ((s:X\np)/(s:X\np))/np,
                ((s:X\np)\(s:X\np))\np,
@@ -1911,7 +1902,7 @@ semlex(Cat,Sym,Index,Att-Att,Sem):-
    att(Att,scope,inv), !,
    Sem = lam(Q2,lam(V,lam(Q,lam(F,app(Q2,lam(Y,app(app(V,Q),lam(E,merge(B:drs([],[B:Index:rel(E,Y,Sym,0)]),app(F,E)))))))))).
 
-semlex(Cat,Sym,Index,Att-Att,Sem):-
+semlex(Cat,Sym,Index,Att-[sem:'REL'|Att],Sem):-
    member(Cat,[((s:X\np)\(s:X\np))/np,
                ((s:X\np)/(s:X\np))/np,
                ((s:X\np)\(s:X\np))\np,
@@ -1919,14 +1910,14 @@ semlex(Cat,Sym,Index,Att-Att,Sem):-
    Sem = lam(Q2,lam(V,lam(Q,lam(F,app(app(V,Q),lam(E,app(Q2,lam(Y,merge(B:drs([],[B:Index:rel(E,Y,Sym,0)]),app(F,E)))))))))).
 
 % from 8% the week before
-semlex(Cat,Sym,Index,Att-Att,Sem):-
+semlex(Cat,Sym,Index,Att-[sem:'REL'|Att],Sem):-
    member(Cat,[(((s:X\np)\(s:X\np))\np)/np,
                (((s:X\np)\(s:X\np))/np)/np]), !,
    Sem = lam(Q3,lam(Q2,lam(V,lam(Q1,lam(F,app(app(V,Q1),lam(E,app(Q3,lam(Z,merge(B1:drs([],[B1:Index:rel(E,Z,Sym,0)]),
                                                                                  app(Q2,lam(Y,merge(B2:drs([],[B2:[]:rel(E,Y,rel,0)]),
                                                                                                     app(F,E)))))))))))))).
 
-semlex(Cat,Sym,Index,Att-Att,Sem):-
+semlex(Cat,Sym,Index,Att-[sem:'REL'|Att],Sem):-
    member(Cat,[(((s:X\np)\(s:X\np))/((s:X\np)\(s:X\np)))/np,
                (((s:X\np)\(s:X\np))\((s:X\np)\(s:X\np)))/np,
                (((s:X\np)/(s:X\np))\((s:X\np)/(s:X\np)))/np,
@@ -2028,7 +2019,7 @@ semlex(Cat,where,Index,Att1-Att2,Sem):-
    Discourse connectors: when
 ------------------------------------------------------------------------- */
 
-semlex(Cat,when,Index,Att-Att,Sem):-
+semlex(Cat,when,Index,Att-[sem:'SUB'|Att],Sem):-
    option('--tense',true),
    option('--theory',drt),
    member(Cat,[((s:X\np)\(s:X\np))/s:dcl]), !,
@@ -2292,7 +2283,7 @@ semlex(Cat,Sym,Index,Att-[sem:'REL'|Att],Sem):-
    instead (of)
 ------------------------------------------------------------------------- */
 
-semlex(Cat,instead,Index,Att-Att,Sem):-
+semlex(Cat,instead,Index,Att-[sem:'NOT'|Att],Sem):-
    member(Cat,[((s:X\np)\(s:X\np))/pp,
                ((s:X\np)/(s:X\np))/pp,
                ((s:adj\np)\(s:adj\np))/pp]), !,
@@ -2341,7 +2332,7 @@ semlex(Cat,Sym,Index,Att1-Att2,Sem):-
                                                                                        B:[]:rel(E,X,Relation,0)]),
                                                                 merge(app(PP,X),app(F,E))))])))))).
 
-semlex(Cat,Sym,Index,Att-Att,Sem):-
+semlex(Cat,Sym,Index,Att-[sem:'IST'|Att],Sem):-
    member(Cat,[(s:X/s:X)/pp,
                (s:X\s:X)/pp]), !,
    att(Att,sense,Sense),
@@ -2354,7 +2345,7 @@ semlex(Cat,Sym,Index,Att-Att,Sem):-
    VP adverb modifier (negation)
 ------------------------------------------------------------------------- */
 
-semlex(Cat,Sym,Index,Att-Att,Sem):-
+semlex(Cat,Sym,Index,Att-[sem:'NOT'|Att],Sem):-
    notSymbol(Sym),
    option('--semantics',drg),
    member(Cat,[((s:X\np)/(s:X\np))/((s:X\np)/(s:X\np)),
@@ -2364,7 +2355,7 @@ semlex(Cat,Sym,Index,Att-Att,Sem):-
    Sem = lam(AV,lam(VP,lam(NP,lam(F,B1:drs([],[B1:[]:not(app(app(app(AV,VP),NP),lam(E,merge(B2:drs([],[B2:Index:pred(E,Sym,s,1)]),app(F,E)))))]))))).
 
 
-semlex(Cat,Sym,Index,Att-Att,Sem):-
+semlex(Cat,Sym,Index,Att-[sem:'NOT'|Att],Sem):-
    notSymbol(Sym),
    member(Cat,[((s:X\np)/(s:X\np))/((s:X\np)/(s:X\np)),
                ((s:X\np)/(s:X\np))\((s:X\np)/(s:X\np)),
@@ -2390,7 +2381,7 @@ semlex(Cat,Sym,Index,Att1-Att2,Sem):-
                                                                        app(F,E)))))))).
 
 /* -------------------------------------------------------------------------
-   VP adverb modifier (NPs that function as modifiers)
+   VP adverb modifier (NPs that function as modifiers) `Saturday evening`
 ------------------------------------------------------------------------- */
 
 semlex(Cat,Sym,Index,Att1-Att2,Sem):-
@@ -2463,11 +2454,11 @@ semlex(Cat,Sym,Index,Att-Att,Sem):-
    Preposition (in front of WH, as in "From where ...")
 ------------------------------------------------------------------------- */
 
-semlex((s:wq/(s:q/pp))/(s:wq/(s:q/np)),Sym,Index,Att-Att,Sem):-
+semlex((s:wq/(s:q/pp))/(s:wq/(s:q/np)),Sym,Index,Att-[sem:'REL'|Att],Sem):-
    Sem = lam(Q,lam(W,lam(F,app(app(Q,V),F)))),
    V = lam(N,lam(E,app(N,lam(X,app(app(W,lam(Y,B:drs([],[B:Index:rel(Y,X,Sym,0)]))),E))))).
 
-semlex((s:wq/(s:q/np))/(s:wq/(s:q/np)),_Sym,_Index,Att-Att,Sem):-
+semlex((s:wq/(s:q/np))/(s:wq/(s:q/np)),_Sym,_Index,Att-[sem:'NIL'|Att],Sem):-
    Sem = lam(X,X).
 
 
@@ -3052,7 +3043,7 @@ semlex(Cat,when,Index,Att-[sem:'SUB'|Att],Sem):-
 
 
 /* -------------------------------------------------------------------------
-   Discourse connectors: if
+   Discourse connectors: if S1 then S2; S2 if S1
 ------------------------------------------------------------------------- */
 
 semlex(Cat,if,Index,Att-[sem:'IMP'|Att],Sem):-
@@ -3061,26 +3052,20 @@ semlex(Cat,if,Index,Att-[sem:'IMP'|Att],Sem):-
                (s:X\s:X)/s:dcl,(s:wq\s:wq)/s:dcl]), !,
    Sem = lam(S1,lam(S2,lam(F,app(S2,lam(Y,merge(app(F,Y),app(S1,lam(E,B2:drs([],[B2:Index:rel(Y,E,condition,1)]))))))))).
 
-semlex(Cat,if,Index,Att-Att,Sem):-
-   member(Cat,[(s:X/s:X)/s:dcl,
-               (s:wq/s:wq)/s:dcl]), !,
+semlex(Cat,if,Index,Att-[sem:'IMP'|Att],Sem):-
+   member(Cat,[(s:X/s:X)/s:dcl,(s:wq/s:wq)/s:dcl,
+               (s:X\s:X)/s:dcl,(s:wq\s:wq)/s:dcl]), !,
    plosing(CC),
    Sem = lam(S1,lam(S2,lam(F,B:drs([],[B:Index:imp(app(S1,CC),app(S2,F))])))).
-
-semlex(Cat,if,Index,Att-Att,Sem):-
-   member(Cat,[(s:X\s:X)/s:dcl,
-               (s:wq\s:wq)/s:dcl]), !,
-   closing(CC),
-   Sem = lam(S2,lam(S1,lam(F,B:drs([],[B:Index:imp(app(S1,CC),app(S2,F))])))).
 
 
 /* -------------------------------------------------------------------------
    Discourse connectors: if
 ------------------------------------------------------------------------- */
 
-semlex((s:X\s:X)/s:dcl,and,_Index,Att-Att,Sem):-
+semlex((s:X\s:X)/s:dcl,and,_Index,Att-[sem:'IMP'|Att],Sem):-
    option('--theory',drt), !,
-   closing(CC),
+   plosing(CC),
    Sem = lam(S2,lam(S1,lam(F,merge(app(S1,CC),app(S2,F))))).
 
 
@@ -3091,7 +3076,7 @@ semlex((s:X\s:X)/s:dcl,and,_Index,Att-Att,Sem):-
 semlex(Cat,Sym,Index,Att-[sem:'SUB'|Att],Sem):-
    option('--theory',sdrt),
    Cat = (s:X/s:X)/s:_, !,
-   closing(CC),
+   plosing(CC),
 %  Sem = lam(S1,lam(S2,lam(F,sdrs([lab(K1,B1),lab(K2,B2)],[Index:rel(K1,K2,Sym)])))),
    Sem = lam(S2,lam(S1,lam(F,sdrs([sub(lab(K1,B1),lab(K2,B2))],[Index:rel(K1,K2,Sym)])))),
    B1 = app(S1,CC),
@@ -3141,7 +3126,6 @@ semlex(Cat,_Sym,_,Att-Att,Sem):-
                                               app(P,X))))))).
 
 semlex(Cat,_Sym,_,Att-Att,Sem):-
-
    member(Cat,[(np\np)/(s:_\np), (np\np)/(s:_/np)]),
    option('--elimeq',false), !,
    closing(CC),
