@@ -3063,7 +3063,7 @@ semlex(Cat,if,Index,Att-[sem:'IMP'|Att],Sem):-
    Discourse connectors: if
 ------------------------------------------------------------------------- */
 
-semlex((s:X\s:X)/s:dcl,and,_Index,Att-[sem:'IMP'|Att],Sem):-
+semlex((s:X\s:X)/s:dcl,and,_Index,Att-Att,Sem):-
    option('--theory',drt), !,
    plosing(CC),
    Sem = lam(S2,lam(S1,lam(F,merge(app(S1,CC),app(S2,F))))).
