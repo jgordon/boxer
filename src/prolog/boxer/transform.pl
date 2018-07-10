@@ -1,6 +1,6 @@
 
 :- module(transform,[preprocess/6,
-                     topsem/2,      % +Der, -Sem 
+                     topsem/2,      % +Der, -Sem
                      topatt/2,      % +Der, -Attributes
                      topstr/2,      % +Der, -String
                      topcat/2]).    % +Der, -Category
@@ -8,6 +8,7 @@
 :- use_module(library(lists),[append/3,member/2]).
 :- use_module(semlib(options),[option/2]).
 :- use_module(semlib(errors),[error/2,warning/2]).
+:- use_module(boxer(morpha),[morpha/2]).
 :- use_module(boxer(slashes)).
 
 
@@ -29,7 +30,7 @@ preprocess(SID,_,_,_,_,_):-
 
 trans(fa(n,X,funny(n,Conj,fa(n,Y,Z))),N1,X2,N3,Tags):- !,
    trans(fa(n,ba(n/n,X,conj((n/n)\(n/n),n/n,Conj,Y)),Z),N1,X2,N3,Tags).
-   
+
 trans(funny(_,_,X1),N1,X2,N3,Tags):- !,
    warning('the funny combinatory rule causes skipping token ~p',[N1]),
    N2 is N1 + 1, %% assuming we skip one word (i.e. 'and')
@@ -40,7 +41,7 @@ trans(funny(_,_,X1),N1,X2,N3,Tags):- !,
    Punctuation typechange rules
 ------------------------------------------------------------------------- */
 
-trans(rtc(C,X1,Pu1),N1,ba(C,nil,Att,Str,X2,X3),N3,Tags1-Tags3):- 
+trans(rtc(C,X1,Pu1),N1,ba(C,nil,Att,Str,X2,X3),N3,Tags1-Tags3):-
    Pu1 =.. [t,_|Cs], !,
    trans(X1,N1,X2,N2,Tags1-Tags2),
    topcat(X2,Cat),
@@ -76,133 +77,136 @@ trans(lp(Cat,X0,Y1),N1,X2,N3,Tags):-
    Application
 ------------------------------------------------------------------------- */
 
-trans(fa(_,X1,Y1),  N1,  fa(C1,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !, 
-   trans(X1,N1,X2,N2,Tags1-Tags2), 
+trans(fa(_,X1,Y1),  N1,  fa(C1,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !,
+   trans(X1,N1,X2,N2,Tags1-Tags2),
    topcat(X2,C1/C2),
    trans(Y1,N2,Y2,N3,Tags2-Tags3),
    topcat(Y2,C2),
    strings(X2,Y2,Str),
    headAtt(X2,Y2,Att).
 
-trans(ba(_,X1,Y1),  N1,  ba(C2,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !, 
-   trans(X1,N1,X2,N2,Tags1-Tags2), 
+trans(ba(_,X1,Y1),  N1,  ba(C2,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !,
+   trans(X1,N1,X2,N2,Tags1-Tags2),
    topcat(X2,C1),
    trans(Y1,N2,Y2,N3,Tags2-Tags3),
    topcat(Y2,C2\C1),
    strings(X2,Y2,Str),
-   headAtt(X2,Y2,Att).
+   headAtt(Y2,X2,Att).
 
 
 /* -------------------------------------------------------------------------
    Composition
 ------------------------------------------------------------------------- */
 
-trans(fc(_,X1,Y1),  N1,  fc(C1/C3,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !, 
-   trans(X1,N1,X2,N2,Tags1-Tags2), 
+trans(fc(_,X1,Y1),  N1,  fc(C1/C3,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !,
+   trans(X1,N1,X2,N2,Tags1-Tags2),
    trans(Y1,N2,Y2,N3,Tags2-Tags3),
    topcat(X2,C1/C2),
    topcat(Y2,C2/C3),
    strings(X2,Y2,Str),
    headAtt(X2,Y2,Att).
 
-trans(bc(_,X1,Y1),  N1,  bc(C3\C1,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !, 
-   trans(X1,N1,X2,N2,Tags1-Tags2), 
+trans(bc(_,X1,Y1),  N1,  bc(C3\C1,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !,
+   trans(X1,N1,X2,N2,Tags1-Tags2),
    trans(Y1,N2,Y2,N3,Tags2-Tags3),
    topcat(X2,C2\C1),
    topcat(Y2,C3\C2),
-   strings(X2,Y2,Str),  
-   headAtt(X2,Y2,Att).
+   strings(X2,Y2,Str),
+   headAtt(Y2,X2,Att).
 
 /* -------------------------------------------------------------------------
    Generalised Composition
 ------------------------------------------------------------------------- */
 
-trans(gfc(C,N,X1,Y1),  N1,  gfc(C,N,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !, 
-   trans(X1,N1,X2,N2,Tags1-Tags2), 
+trans(gfc(C,N,X1,Y1),  N1,  gfc(C,N,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !,
+   trans(X1,N1,X2,N2,Tags1-Tags2),
    trans(Y1,N2,Y2,N3,Tags2-Tags3),
-   strings(X2,Y2,Str),  
+   strings(X2,Y2,Str),
    headAtt(X2,Y2,Att).
 
-trans(gbc(C,N,X1,Y1),  N1,  gbc(C,N,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !, 
-   trans(X1,N1,X2,N2,Tags1-Tags2), 
+trans(gbc(C,N,X1,Y1),  N1,  gbc(C,N,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !,
+   trans(X1,N1,X2,N2,Tags1-Tags2),
    trans(Y1,N2,Y2,N3,Tags2-Tags3),
-   strings(X2,Y2,Str),  
-   headAtt(X2,Y2,Att).
+   strings(X2,Y2,Str),
+   headAtt(Y2,X2,Att).
 
 
 /* -------------------------------------------------------------------------
    Crossed Composition
 ------------------------------------------------------------------------- */
 
-trans(bxc(_,X1,Y1),  N1,  bxc(C3/C1,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !, 
-   trans(X1,N1,X2,N2,Tags1-Tags2), 
+trans(bxc(_,X1,Y1),  N1,  bxc(C3/C1,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !,
+   trans(X1,N1,X2,N2,Tags1-Tags2),
    trans(Y1,N2,Y2,N3,Tags2-Tags3),
    topcat(X2,C2/C1),
    topcat(Y2,C3\C2),
-   strings(X2,Y2,Str),  
+   strings(X2,Y2,Str),
    headAtt(X2,Y2,Att).
 
-trans(fxc(C,X1,Y1), N1, fxc(C,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !, 
-   trans(X1,N1,X2,N2,Tags1-Tags2), 
+trans(fxc(C,X1,Y1), N1, fxc(C,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !,
+   trans(X1,N1,X2,N2,Tags1-Tags2),
    trans(Y1,N2,Y2,N3,Tags2-Tags3),
-   strings(X2,Y2,Str),  
-   headAtt(X2,Y2,Att).
+   strings(X2,Y2,Str),
+   headAtt(Y2,X2,Att).
 
 
 /* -------------------------------------------------------------------------
    Generalised Crossed Composition
 ------------------------------------------------------------------------- */
 
-trans(gfxc(C,N,X1,Y1), N1, gfxc(C,N,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !, 
-   trans(X1,N1,X2,N2,Tags1-Tags2), 
+trans(gfxc(C,N,X1,Y1), N1, gfxc(C,N,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !,
+   trans(X1,N1,X2,N2,Tags1-Tags2),
    trans(Y1,N2,Y2,N3,Tags2-Tags3),
-   strings(X2,Y2,Str),  
+   strings(X2,Y2,Str),
    headAtt(X2,Y2,Att).
 
-trans(gbxc(C,N,X1,Y1), N1, gbxc(C,N,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !, 
-   trans(X1,N1,X2,N2,Tags1-Tags2), 
+trans(gbxc(C,N,X1,Y1), N1, gbxc(C,N,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !,
+   trans(X1,N1,X2,N2,Tags1-Tags2),
    trans(Y1,N2,Y2,N3,Tags2-Tags3),
-   strings(X2,Y2,Str),  
-   headAtt(X2,Y2,Att).
+   strings(X2,Y2,Str),
+   headAtt(Y2,X2,Att).
 
 
 /* -------------------------------------------------------------------------
    Conjuction (Coordination)
 ------------------------------------------------------------------------- */
 
-%trans(conj(np:nb\np:nb,np:nb,X1,Y1), N1, conj(np\np,np,nil,Att,X2,Y2), N3, Tags1-Tags3):- 
+trans(conj(C\C,X,Y),N1,Cat,N2,Tags):-
+   trans(conj(C\C,C,X,Y),N1,Cat,N2,Tags).
+
+%trans(conj(np:nb\np:nb,np:nb,X1,Y1), N1, conj(np\np,np,nil,Att,X2,Y2), N3, Tags1-Tags3):-
 %   X1 =.. [t,conj|Cs], !,
-%   X3 =.. [t,conj:np|Cs], 
-%   trans(X3,N1,X2,N2,Tags1-Tags2), 
+%   X3 =.. [t,conj:np|Cs],
+%   trans(X3,N1,X2,N2,Tags1-Tags2),
 %   trans(Y1,N2,Y2,N3,Tags2-Tags3),
 %   topatt(Y2,Att).
 
-trans(conj(np\np,np,X1,Y1), N1, conj(np\np,np,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- 
-   X1 =.. [t,comma   |Cs], !,       % replace apposition comma 
+trans(conj(np\np,np,X1,Y1), N1, conj(np\np,np,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):-
+   X1 =.. [t,comma   |Cs], !,       % replace apposition comma
    X3 =.. [t,conj:app|Cs],          % by category conj:app
-   trans(X3,N1,X2,N2,Tags1-Tags2), 
+   trans(X3,N1,X2,N2,Tags1-Tags2),
    trans(Y1,N2,Y2,N3,Tags2-Tags3),
    strings(X2,Y2,Str),
    topatt(Y2,Att).
 
 trans(conj(Cat\Cat,Cat,X1,Y1), N1, conj(NewCat\NewCat,NewCat,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !,
    adjustFeatures(Cat,NewCat),
-   trans(X1,N1,X2,N2,Tags1-Tags2), 
-   X2 =.. [_,conj:NewCat|_], 
+   trans(X1,N1,X2,N2,Tags1-Tags2),
+   X2 =.. [_,conj:NewCat|_],
    trans(Y1,N2,Y2,N3,Tags2-Tags3),
    strings(X2,Y2,Str),
    topatt(Y2,Att).
 
-trans(conj(_C1,_C2,Y1,Z1), N1, conj(C\C,C,nil,Att,Str,Y2,Z2), N3, Tags1-Tags3):- !, 
-   trans(Y1,N1,Y2,N2,Tags1-Tags2), 
+trans(conj(_C1,_C2,Y1,Z1), N1, conj(C\C,C,nil,Att,Str,Y2,Z2), N3, Tags1-Tags3):- !,
+   trans(Y1,N1,Y2,N2,Tags1-Tags2),
    trans(Z1,N2,Z2,N3,Tags2-Tags3),
    strings(Y2,Z2,Str),
    topcat(Z2,C),
    topatt(Z2,Att).
 
-trans(coord(_C,X1,Y1,Z1), N1, coord(C,nil,Att,Str,X2,Y2,Z2), N4, Tags1-Tags4):- !, 
-   trans(X1,N1,X2,N2,Tags1-Tags2), 
-   trans(Y1,N2,Y2,N3,Tags2-Tags3), 
+trans(coord(_C,X1,Y1,Z1), N1, coord(C,nil,Att,Str,X2,Y2,Z2), N4, Tags1-Tags4):- !,
+   trans(X1,N1,X2,N2,Tags1-Tags2),
+   trans(Y1,N2,Y2,N3,Tags2-Tags3),
    trans(Z1,N3,Z2,N4,Tags3-Tags4),
    topstr(X2,S1),
    topstr(Y2,S2), append(S1,S2,S3),
@@ -217,7 +221,7 @@ trans(coord(_C,X1,Y1,Z1), N1, coord(C,nil,Att,Str,X2,Y2,Z2), N4, Tags1-Tags4):- 
 
 trans(lx(C,D,X),N1,T,N2,Tags):- !, trans(tc(C,D,X),N1,T,N2,Tags).
 
-trans(tc(C1,_,X1), N1, tc(C3,C2,nil,Att,Str,X2), N2, Tags):- !, 
+trans(tc(C1,_,X1), N1, tc(C3,C2,nil,Att,Str,X2), N2, Tags):- !,
    adjustFeatures(C1,C3),
    trans(X1,N1,X2,N2,Tags),
    topcat(X2,C2),
@@ -229,13 +233,13 @@ trans(tc(C1,_,X1), N1, tc(C3,C2,nil,Att,Str,X2), N2, Tags):- !,
    Unary Rules: Type Raising
 ------------------------------------------------------------------------- */
 
-trans(tr(C1/(C1\C2),X1), N1, ftr(C1/(C1\C2),C2,nil,Att,Str,X2), N2, Tags):- !, 
+trans(tr(C1/(C1\C2),X1), N1, ftr(C1/(C1\C2),C2,nil,Att,Str,X2), N2, Tags):- !,
    trans(X1,N1,X2,N2,Tags),
    topcat(X2,C2),
    topstr(X2,Str),
    topatt(X2,Att).
 
-trans(tr(C1\(C1/C2),X1), N1, btr(C1\(C1/C2),C2,nil,Att,Str,X2), N2, Tags):- !, 
+trans(tr(C1\(C1/C2),X1), N1, btr(C1\(C1/C2),C2,nil,Att,Str,X2), N2, Tags):- !,
    trans(X1,N1,X2,N2,Tags),
    topcat(X2,C2),
    topstr(X2,Str),
@@ -246,41 +250,41 @@ trans(tr(C1\(C1/C2),X1), N1, btr(C1\(C1/C2),C2,nil,Att,Str,X2), N2, Tags):- !,
    Substitution
 ------------------------------------------------------------------------- */
 
-trans(fs(C,X1,Y1),  N1,  fs(C,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !, 
-   trans(X1,N1,X2,N2,Tags1-Tags2), 
+trans(fs(C,X1,Y1),  N1,  fs(C,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !,
+   trans(X1,N1,X2,N2,Tags1-Tags2),
    trans(Y1,N2,Y2,N3,Tags2-Tags3),
-   strings(X2,Y2,Str),  
+   strings(X2,Y2,Str),
    headAtt(X2,Y2,Att).
 
-trans(bs(C,X1,Y1),  N1,  bs(C,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !, 
-   trans(X1,N1,X2,N2,Tags1-Tags2), 
+trans(bs(C,X1,Y1),  N1,  bs(C,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !,
+   trans(X1,N1,X2,N2,Tags1-Tags2),
    trans(Y1,N2,Y2,N3,Tags2-Tags3),
-   strings(X2,Y2,Str),  
+   strings(X2,Y2,Str),
+   headAtt(Y2,X2,Att).
+
+trans(fxs(C,X1,Y1), N1, fxs(C,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !,
+   trans(X1,N1,X2,N2,Tags1-Tags2),
+   trans(Y1,N2,Y2,N3,Tags2-Tags3),
+   strings(X2,Y2,Str),
    headAtt(X2,Y2,Att).
 
-trans(fxs(C,X1,Y1), N1, fxs(C,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !, 
-   trans(X1,N1,X2,N2,Tags1-Tags2), 
+trans(bxs(C,X1,Y1), N1, bxs(C,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !,
+   trans(X1,N1,X2,N2,Tags1-Tags2),
    trans(Y1,N2,Y2,N3,Tags2-Tags3),
-   strings(X2,Y2,Str),  
-   headAtt(X2,Y2,Att).
-
-trans(bxs(C,X1,Y1), N1, bxs(C,nil,Att,Str,X2,Y2), N3, Tags1-Tags3):- !, 
-   trans(X1,N1,X2,N2,Tags1-Tags2),  
-   trans(Y1,N2,Y2,N3,Tags2-Tags3),
-   strings(X2,Y2,Str),  
-   headAtt(X2,Y2,Att).
+   strings(X2,Y2,Str),
+   headAtt(Y2,X2,Att).
 
 
 /* -------------------------------------------------------------------------
    Token (repair rules -- systematically wrong output of C&C parser)
 ------------------------------------------------------------------------- */
 
-trans(t(A,B,people,C,D,E),N,Tok,M,Tags):- 
-   option('--x',true), !,
+trans(t(A,B,people,C,D,E),N,Tok,M,Tags):-
+   option('--x',true), !, % SemEval-2014
    trans(t(A,B,person,C,D,E),N,Tok,M,Tags).
 
-trans(t(A,B,C,'NNP',D,E),N,Tok,M,Tags):- 
-   option('--x',true), !,
+trans(t(A,B,C,'NNP',D,E),N,Tok,M,Tags):-
+   option('--x',true), !, % SemEval-2014
    trans(t(A,B,C,'NN',D,E),N,Tok,M,Tags).
 
 trans(t(Cat,'\'t',_,'VB',S,Ne),N,Tok,M,Tags):- !,
@@ -289,32 +293,44 @@ trans(t(Cat,'\'t',_,'VB',S,Ne),N,Tok,M,Tags):- !,
 trans(t(Cat,'\'t',_,'VB',Att),N,Tok,M,Tags):- !,
    trans(t(Cat,'\'t','RB',Att),N,Tok,M,Tags).
 
-trans(t(Cat,Contr,Contr,Pos,_,Ne),N,Tok,M,Tags):- 
+trans(t(Cat,Contr,Contr,Pos,_,Ne),N,Tok,M,Tags):-
    member(Contr,['\'s','\'m','\'re']),
    member(Pos,['VBZ','VBP']), !,
    trans(t(Cat,Contr,Pos,[lemma:be,namex:Ne]),N,Tok,M,Tags).
 
+trans(t(A,B,please,'VB',D,E),N,Tok,M,Tags):- !,
+   trans(t(A,B,please,'RB',D,E),N,Tok,M,Tags).
+
+
+/* -------------------------------------------------------------------------
+   Token (wrapper rules -- dealing with old output of C&C parser)
+------------------------------------------------------------------------- */
+
 trans(t(Cat,Token,Pos),N,Tok,M,Tags):- !,
    trans(t(Cat,Token,Pos,[]),N,Tok,M,Tags).
+
+trans(t(Cat,Token,Lem,Pos,S1,Ne),N,Tok,M,Tags):- !,
+   context(S1,S2),
+   trans(t(Cat,Token,Pos,[lemma:Lem,namex:Ne|S2]),N,Tok,M,Tags).
 
 
 /* -------------------------------------------------------------------------
    Token
 ------------------------------------------------------------------------- */
 
-% new input version (t/4 terms)
-trans(t(Cat1,Tok,Pos,Tags),N,t(Cat2,Tok,nil,[pos:Pos|Tags],N),M,T1-T2):-
+trans(t(Cat1,Tok,Pos,Tags),N,t(Cat2,Tok,nil,RevTags,N),M,T1-T2):-
    adjustFeatures(Cat1,Cat2),
    tags(T2,N,[tok:Tok,pos:Pos|Tags],T1),
+   morpha([pos:Pos|Tags],RevTags),
    M is N + 1.
 
 % old input version (t/6 terms)
-trans(t(Cat1,Tok,Lem,Pos,S1,Ne),N,t(Cat2,Tok,nil,[pos:Pos,lemma:Lem,namex:Ne|S2],N),M,T1-T2):-
-   context(S1,S2),
-   adjustFeatures(Cat1,Cat2),
-   tags(T2,N,[tok:Tok,pos:Pos,lemma:Lem,namex:Ne|S2],T1),  
-   M is N + 1.
- 
+%trans(t(Cat1,Tok,Lem,Pos,S1,Ne),N,t(Cat2,Tok,nil,[pos:Pos,lemma:Lem,namex:Ne|S2],N),M,T1-T2):-
+%   context(S1,S2),
+%   adjustFeatures(Cat1,Cat2),
+%   tags(T2,N,[tok:Tok,pos:Pos,lemma:Lem,namex:Ne|S2],T1),
+%   M is N + 1.
+
 
 /* =========================================================================
    String Formation
@@ -346,13 +362,13 @@ featureN(_,      nom).
    Adjust features (mostly bugs in C&C parser)
 ========================================================================= */
 
-adjustFeatures(conj/conj, conj:X/conj:X):- !.        
+adjustFeatures(conj/conj, conj:X/conj:X):- !.
 
-adjustFeatures(conj, conj:_):- !.        
+adjustFeatures(conj, conj:_):- !.
 
-adjustFeatures(comma, conj:_):- !.        
+adjustFeatures(comma, conj:_):- !.
 
-adjustFeatures(semi, conj:_):- !.        
+adjustFeatures(semi, conj:_):- !.
 
 adjustFeatures(s, s:_):- !.             %%% bug in C&C parser
 
@@ -416,13 +432,13 @@ top(bs(C,S,A,W,_,_),C,S,A,W).
 top(fxs(C,S,A,W,_,_),C,S,A,W).
 top(bxs(C,S,A,W,_,_),C,S,A,W).
 top(gfc(C,_,S,A,W,_,_),C,S,A,W).
-top(gbc(C,_,S,A,W,_,_),C,S,A,W). 
-top(gfxc(C,_,S,A,W,_,_),C,S,A,W). 
-top(gbxc(C,_,S,A,W,_,_),C,S,A,W). 
+top(gbc(C,_,S,A,W,_,_),C,S,A,W).
+top(gfxc(C,_,S,A,W,_,_),C,S,A,W).
+top(gbxc(C,_,S,A,W,_,_),C,S,A,W).
 top(gfc(C,S,A,W,_,_),C,S,A,W).
-top(gbc(C,S,A,W,_,_),C,S,A,W). 
-top(gfxc(C,S,A,W,_,_),C,S,A,W). 
-top(gbxc(C,S,A,W,_,_),C,S,A,W). 
+top(gbc(C,S,A,W,_,_),C,S,A,W).
+top(gfxc(C,S,A,W,_,_),C,S,A,W).
+top(gbxc(C,S,A,W,_,_),C,S,A,W).
 top(ftr(C,_,S,A,W,_),C,S,A,W).
 top(btr(C,_,S,A,W,_),C,S,A,W).
 top(tc(C,_,S,A,W,_),C,S,A,W).
@@ -436,9 +452,9 @@ top(coord(C,S,A,W,_,_,_),C,S,A,W).
    Take attributes from head
 ------------------------------------------------------------------------- */
 
-headAtt(D1,D2,Att):- topcat(D1,C/C), !, topatt(D2,Att).
-headAtt(D1,D2,Att):- topcat(D2,C\C), !, topatt(D1,Att).
-headAtt(D1,_ ,Att):- topatt(D1,Att), !.
+headAtt(D1,D2,Att):- topcat(D1,C1/C2), C1==C2, !, topatt(D2,Att).
+headAtt(D1,D2,Att):- topcat(D1,C1\C2), C1==C2, !, topatt(D2,Att).
+headAtt(D0,_ ,Att):- topatt(D0,Att), !.
 
 
 /* -------------------------------------------------------------------------

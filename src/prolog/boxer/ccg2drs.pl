@@ -1,13 +1,14 @@
 
 :- module(ccg2drs,[ccg2drs/3,base/4,gen/4]).
 
-:- use_module(library(lists),[member/2]).
+:- use_module(library(lists),[member/2,select/3,append/3]).
 
 :- use_module(boxer(slashes)).
 :- use_module(boxer(betaConversionDRT),[betaConvert/2]).
 :- use_module(boxer(resolveDRT),[resolveDrs/1]).
 %:-use_module(boxer(vpe),[resolveVPE/2]).
 :- use_module(boxer(transform),[preprocess/6,topcat/2,topatt/2,topsem/2,topstr/2]).
+:- use_module(boxer(relation),[resolve_relations/2]).
 :- use_module(boxer(closure),[closure/3]).
 :- use_module(boxer(lexicon),[semlex/5]).
 :- use_module(boxer(coordination),[coordMacro/2,argCard/2]).
@@ -15,11 +16,12 @@
 :- use_module(boxer(evaluation),[incCompleted/0,incAttempted/0]).
 :- use_module(boxer(input),[preferred/2]).
 :- use_module(boxer(sdrt),[mergeSDRS/2]).
-:- use_module(boxer(drs2fdrs),[instDrs/2]).
+:- use_module(boxer(drs2fdrs),[instDrs/1,instDrs/2]).
 :- use_module(boxer(tuples),[tuples/4]).
 :- use_module(boxer(categories),[att/3]).
 
 :- use_module(semlib(drs2tacitus),[drs2tac/4]).
+:- use_module(semlib(drs2amr),[drs2amr/4]).
 :- use_module(semlib(pdrs2drs),[pdrs2drs/2]).
 :- use_module(semlib(drs2fol),[drs2fol/2]).
 :- use_module(semlib(options),[option/2]).
@@ -31,19 +33,19 @@
    Main Predicate
 ========================================================================= */
 
-ccg2drs(L,Ders,_):-  
+ccg2drs(L,Ders,_):-
    option('--semantics',der), !,
-   ccg2ders(L,Ders,1). 
+   ccg2ders(L,Ders,1).
 
-ccg2drs([C|L],XDRS,Context):-  
-   build(C,DRS,Tags,1,Index,_), 
+ccg2drs([C|L],XDRS,Context):-
+   build(C,DRS,Tags,1,Index,_),
    resolveDrs(DRS), !,
    incAttempted, incCompleted,
-   ccg2drss(L,Tags,DRS,Context,XDRS,Index). 
+   ccg2drss(L,Tags,DRS,Context,XDRS,Index).
 
 ccg2drs([C|L],XDRS,Context):-
    incAttempted,
-   noanalysis(C), 
+   noanalysis(C),
    ccg2drs(L,XDRS,Context).
 
 
@@ -54,17 +56,17 @@ ccg2drs([C|L],XDRS,Context):-
 ccg2drss([],Tags-[],PDRS,_,xdrs(Tags,Sem),_):- !,
    semantics(PDRS,Tags,Sem).
 
-ccg2drss([C|L],Tags1-Tags2,PrevDRS,Context,XDRS,Index):-  
-   build(C,DRS,Tags2-Tags3,Index,NewIndex,_), 
+ccg2drss([C|L],Tags1-Tags2,PrevDRS,Context,XDRS,Index):-
+   build(C,DRS,Tags2-Tags3,Index,NewIndex,_),
    insertDRS(PrevDRS,DRS,NewDRS),
    resolveDrs(NewDRS),    !,
    incAttempted, incCompleted,
-   ccg2drss(L,Tags1-Tags3,NewDRS,Context,XDRS,NewIndex). 
+   ccg2drss(L,Tags1-Tags3,NewDRS,Context,XDRS,NewIndex).
 
 ccg2drss([C|L],Tags,PDRS,Context,XDRS,Index):-
    incAttempted,
-   noanalysis(C), 
-   ccg2drss(L,Tags,PDRS,Context,XDRS,Index). 
+   noanalysis(C),
+   ccg2drss(L,Tags,PDRS,Context,XDRS,Index).
 
 
 /* =========================================================================
@@ -77,12 +79,12 @@ ccg2ders([C|L],[Der|Ders],Index):-
    ccg2der(C,Der,Index,NewIndex), !,
    incAttempted,
    incCompleted,
-   ccg2ders(L,Ders,NewIndex). 
+   ccg2ders(L,Ders,NewIndex).
 
 ccg2ders([C|L],Ders,Index):-
    incAttempted,
-   noanalysis(C), 
-   ccg2ders(L,Ders,Index). 
+   noanalysis(C),
+   ccg2ders(L,Ders,Index).
 
 
 /* =========================================================================
@@ -94,8 +96,8 @@ ccg2der(N,der(N,Der),Start,End):-
    preprocess(N,CCG0,CCG1,_Tags,Start,End),
    interpretDer(CCG1,Der).
 
-interpretDer(CCG,Copy):- 
-   interpret(CCG,Der), 
+interpretDer(CCG,Copy):-
+   interpret(CCG,Der),
    copy_term(Der,Copy), !.
 
 interpretDer(CCG,CCG).
@@ -106,15 +108,15 @@ interpretDer(CCG,CCG).
 ========================================================================= */
 
 insertDRS(merge(B1,B2),New,merge(B1,B3)):-
-   option('--theory',drt), !, 
+   option('--theory',drt), !,
    insertDRS(B2,New,B3).
 
-insertDRS(Old,New,B):- 
-   option('--theory',drt), !, 
+insertDRS(Old,New,B):-
+   option('--theory',drt), !,
    B = merge(Old,New).
 
-insertDRS(Old,New,B):- 
-   option('--theory',sdrt), !, 
+insertDRS(Old,New,B):-
+   option('--theory',sdrt), !,
    Rel = continuation,
 %  Rel = elaboration,
    mergeSDRS(smerge(Old,New,Rel,[]),B).
@@ -127,7 +129,7 @@ insertDRS(Old,New,B):-
 build(N,UDRS,Tags,Start,End,der(N,Der)):-
    preferred(N,CCG0),
    preprocess(N,CCG0,CCG1,Tags,Start,End),
-   interpret(CCG1,Der), 
+   interpret(CCG1,Der),
    topsem(Der,Sem),
    topcat(Der,Cat),
 %  topstr(Der,Words), write(Words), nl,
@@ -142,7 +144,7 @@ build(N,UDRS,Tags,Start,End,der(N,Der)):-
 noanalysis(N):-
    preferred(N,_), !,
    warning('no semantics for sentence ~p',[N]).
- 
+
 noanalysis(N):-
    warning('no syntax for sentence ~p',[N]).
 
@@ -152,32 +154,38 @@ noanalysis(N):-
 ========================================================================= */
 
 semantics(X,_,Y):-
-   option('--instantiate',true), option('--semantics',pdrs), !, 
-   instDrs(X,_), Y=X.
+   option('--instantiate',true),
+   option('--semantics',pdrs), !,
+   instDrs(X), Y=X.
 
 semantics(X,_,Y):-
-   option('--semantics',pdrs), !, 
+   option('--semantics',pdrs), !,
    Y=X.
 
 semantics(X,Tags,Y):-
-   option('--semantics',drg), !, 
+   option('--semantics',drg), !,
    instDrs(X,N), tuples(Tags,X,N,Y).
 
 semantics(A,_,B):-
-   option('--instantiate',true), option('--semantics',drs), !, 
-   instDrs(A,_), pdrs2drs(A,B).
+   option('--instantiate',true), option('--semantics',drs), !,
+   instDrs(A), pdrs2drs(A,B).
 
 semantics(A,_,B):-
-   option('--semantics',drs), !, 
+   option('--semantics',drs), !,
    pdrs2drs(A,B).
 
 semantics(A,_,C):-
-   option('--semantics',fol), !, 
+   option('--semantics',fol), !,
    pdrs2drs(A,B), drs2fol(B,C).
 
 semantics(A,Tags,C):-
-   option('--semantics',tacitus), !, 
+   option('--semantics',tacitus), !,
    instDrs(A,N), pdrs2drs(A,B), drs2tac(B,Tags,N,C).
+
+semantics(A,Tags,C):-
+   option('--semantics',amr), !,
+%   instDrs(A,N), pdrs2drs(A,B), drs2amr(B,Tags,N,C).
+   instDrs(A,N), drs2amr(A,Tags,N,C).
 
 
 /* -------------------------------------------------------------------------
@@ -187,7 +195,7 @@ semantics(A,Tags,C):-
 interpret(fa(Cat,_,Att,W,F1,A1),fa(Cat,Sem,Att,W,D1,D2)):- !,
    interpret(F1,D1), topsem(D1,F2),
    interpret(A1,D2), topsem(D2,A2),
-   Sem=app(F2,A2).      
+   Sem=app(F2,A2).
 
 
 /* -------------------------------------------------------------------------
@@ -294,7 +302,7 @@ interpret(gfc(Cat,S,A,W,F1,A1),Der):-
    topcat(A1,ACat),
    base(ACat,S2/S3,Dollar,N),
    base(Cat,S1/S3,Dollar,N), !,
-   interpret(gfc(Cat,N,S,A,W,F1,A1),Der).   
+   interpret(gfc(Cat,N,S,A,W,F1,A1),Der).
 
 
 /* -------------------------------------------------------------------------
@@ -306,7 +314,7 @@ interpret(gbc(Cat,N,_,Att,W,A1,F1),gbc(Cat,Sem,Att,W,D1,D2)):- !,
    interpret(F1,D2), topsem(D2,F2),
    gen(N,F2,A2,Sem).
 
-interpret(gbc(Cat,S,A,A1,W,F1),Der):- 
+interpret(gbc(Cat,S,A,A1,W,F1),Der):-
    topcat(F1,S1\S2),
    topcat(A1,ACat),
    base(ACat,S2\S3,Dollar,N),
@@ -340,7 +348,7 @@ interpret(gbxc(Cat,N,_,Att,W,A1,F1),gbxc(Cat,Sem,Att,W,D1,D2)):- !,
    interpret(F1,D2), topsem(D2,F2),
    gen(N,F2,A2,Sem).
 
-interpret(gbxc(Cat,S,A,W,A1,F1),Der):- 
+interpret(gbxc(Cat,S,A,W,A1,F1),Der):-
    topcat(F1,S1\S2),
    topcat(A1,ACat),
    base(ACat,S2/S3,Dollar,N),
@@ -358,7 +366,7 @@ interpret(gbxc(Cat,S,A,W,A1,F1),Der):-
 %   semlex(Cat,Symbol,[I],Att-_,Sem), !.
 
 interpret(t(Cat,Word,_,Att1,I),t(Cat,Word,Sem,Att2,I)):-
-%  option('--semantics',der), 
+%  option('--semantics',der),
    att(Att1,lemma,Lemma),
    downcase_atom(Lemma,Symbol),
    semlex(Cat,Symbol,[I],Att1-Att2,Sem), !.
@@ -404,8 +412,8 @@ interpret(coord(Cat,_,Att,W,L1,C1,R1),coord(Cat,Sem,Att,W,D1,D2,D3)):- !,
 ------------------------------------------------------------------------- */
 
 interpret(conj(Cat,np,_,Att,W,C1,R1),conj(Cat,np,Sem,Att,W,D1,D2)):-
-   topcat(C1,conj:app), 
-   topcat(R1,np), 
+   topcat(C1,conj:app),
+   topcat(R1,np),
    interpret(C1,D1), topsem(D1,C2),
    interpret(R1,D2), !, topsem(D2,R2),
    Sem = app(C2,R2).
@@ -415,9 +423,9 @@ interpret(conj(Cat,np,_,Att,W,C1,R1),conj(Cat,np,Sem,Att,W,D1,D2)):-
    Dedicated coordination
 ------------------------------------------------------------------------- */
 
-interpret(conj(Cat,CCat,_,Att,W,C1,R1),conj(Cat,CCat,Sem,Att,W,D1,D2)):-  
-   topcat(C1,conj:CCat), 
-   topcat(R1,CCat), 
+interpret(conj(Cat,CCat,_,Att,W,C1,R1),conj(Cat,CCat,Sem,Att,W,D1,D2)):-
+   topcat(C1,conj:CCat),
+   topcat(R1,CCat),
    interpret(C1,D1), topsem(D1,C2),
    interpret(R1,D2), !, topsem(D2,R2),
    Sem = app(C2,R2).
@@ -441,11 +449,11 @@ interpret(conj(Cat,CCat,_,Att,W,C1,R1),conj(Cat,CCat,Sem,Att,W,D1,D2)):- !,
 
 interpret(Input,_,_):-
    Input = t(Cat,Word,_,Att,Index),
-   error('no lexical semantics for cat ~p (token: ~p), (attributes: ~p) (index: ~p)',[Cat,Word,Att,Index]), 
+   error('no lexical semantics for cat ~p (token: ~p), (attributes: ~p) (index: ~p)',[Cat,Word,Att,Index]),
    !, fail.
 
 interpret(Input,_,_):-
-   error('no interpretation rule for ~p',[Input]), 
+   error('no interpretation rule for ~p',[Input]),
    !, fail.
 
 
@@ -458,17 +466,17 @@ gen(2,F,A,lam(X1,lam(X2,app(F,app(app(A,X1),X2))))).
 gen(3,F,A,lam(X1,lam(X2,lam(X3,app(F,app(app(app(A,X1),X2),X3)))))).
 gen(4,F,A,lam(X1,lam(X2,lam(X3,lam(X4,app(F,app(app(app(app(A,X1),X2),X3),X4))))))).
 
-    
+
 /*=============================================================
    Base Categories
 =============================================================*/
 
 base(Cat,Cat,[],1):- !.
 
-base(Cat/Riht,Base,[riht(Riht)|A],N):- !, 
+base(Cat/Riht,Base,[riht(Riht)|A],N):- !,
    base(Cat,Base,A,M), N is M + 1.
 
-base(Cat\Left,Base,[left(Left)|A],N):- !, 
+base(Cat\Left,Base,[left(Left)|A],N):- !,
    base(Cat,Base,A,M), N is M + 1.
 
 
