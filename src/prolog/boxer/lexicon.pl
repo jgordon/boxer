@@ -2291,19 +2291,35 @@ semlex(Cat,instead,Index,Att-[sem:'NOT'|Att],Sem):-
 
 
 /* -------------------------------------------------------------------------
-   Double prepositions, such as "out of", "together with"
+   VP ... according to ...
 ------------------------------------------------------------------------- */
 
-semlex(Cat,Sym,Index,Att-Att,Sem):-
-   att(Att,pos,Pos),
-   member(Pos,['VBG','VBN']),
+semlex(Cat,Sym,Index,Att1-[sem:'EXG'|Att2],Sem):-
+   att(Att1,pos,'VBG'),
    member(Cat,[((s:X\np)\(s:X\np))/pp,
                ((s:X\np)/(s:X\np))/pp,
                ((s:adj\np)\(s:adj\np))/pp]), !,
-   Sem = lam(PP,lam(V,lam(Q,lam(F,app(app(V,Q),lam(E,merge(B:drs([B:[]:Y],[B:Index:pred(Y,Sym,v,0)]),
+   roles(Sym,(s:dcl\np)/s:_,[Role,_],Att1-Att2),
+   Sem = lam(PP,lam(V,lam(Q,lam(F,app(app(V,Q),lam(E,merge(B:drs([B:[]:Y],[B:Index:pred(Y,Sym,v,0),
+                                                                           B:[]:role(Y,E,Role,1)]),
                                                            merge(app(PP,Y),app(F,E))))))))).
 
-semlex(Cat,Sym,Index,Att-Att,Sem):-
+semlex(Cat,Sym,Index,Att1-[sem:'EXT'|Att2],Sem):-
+   att(Att1,pos,'VBN'),
+   member(Cat,[((s:X\np)\(s:X\np))/pp,
+               ((s:X\np)/(s:X\np))/pp,
+               ((s:adj\np)\(s:adj\np))/pp]), !,
+   roles(Sym,(s:dcl\np)/s:_,[Role,_],Att1-Att2),
+   Sem = lam(PP,lam(V,lam(Q,lam(F,app(app(V,Q),lam(E,merge(B:drs([B:[]:Y],[B:Index:pred(Y,Sym,v,0),
+                                                                           B:[]:role(Y,E,Role,1)]),
+                                                           merge(app(PP,Y),app(F,E))))))))).
+
+
+/* -------------------------------------------------------------------------
+   Double prepositions, such as "out of", "together with"
+------------------------------------------------------------------------- */
+
+semlex(Cat,Sym,Index,Att-[sem:'IST'|Att],Sem):-
    member(Cat,[((s:X\np)\(s:X\np))/pp,
                ((s:X\np)/(s:X\np))/pp,
                ((s:adj\np)\(s:adj\np))/pp]), !,
@@ -2466,56 +2482,54 @@ semlex((s:wq/(s:q/np))/(s:wq/(s:q/np)),_Sym,_Index,Att-[sem:'NIL'|Att],Sem):-
    Possessive
 ------------------------------------------------------------------------- */
 
-semlex(Cat,_Lemma,Index,Att-Att,Sem):-
+semlex(Cat,_Lemma,Index,Att-[sem:'HAS'|Att],Sem):-
    member(Cat,[(np:nb/n)/(n/n),
                (np/n)/(n/n)]), !,
    Sem = lam(S,lam(P,lam(Q,merge(B:drs([B:[]:U],[]),
-                                 merge(app(app(S,lam(X,merge(app(P,X),B1:drs([B1:[]:Y],[B1:Index:rel(X,Y,of,0)])))),U),
+                                 merge(app(app(S,lam(X,merge(app(P,X),B1:drs([B1:[]:Y],[B1:Index:rel(X,Y,of,1)])))),U),
                                        app(Q,U)))))).
 
 
 
-semlex(Cat,_,Index,Att1-Att2,Sem):-
+semlex(Cat,_,Index,Att1-[sem:'HAS'|Att2],Sem):-
    member(Cat,[(np/n)\np,
                (np:nb/n)\np]), !,
    rel(of,Att1-Att2,Relation),
-   Sem = lam(NP,lam(N,lam(P,app(NP,lam(Y,alfa(def,merge(B:drs([B:[]:X],[B:Index:rel(X,Y,Relation,0)]),
+   Sem = lam(NP,lam(N,lam(P,app(NP,lam(Y,alfa(def,merge(B:drs([B:[]:X],[B:Index:rel(X,Y,Relation,1)]),
                                                         app(N,X)),
                                                   app(P,X))))))).
 
-semlex(Cat,_,Index,Att-Att,Sem):-
+semlex(Cat,_,Index,Att-[sem:'HAS'|Att],Sem):-
    member(Cat,[(np/(n/pp))\np,
                (np:nb/(n/pp))\np]), !,
    Sem = lam(NP,lam(RN,lam(P,app(NP,lam(Y,alfa(def,merge(B:drs([B:[]:X],[]),
-                                                         app(app(RN,lam(Z,B2:drs([],[B2:Index:rel(Z,Y,of,0)]))),X)),
+                                                         app(app(RN,lam(Z,B2:drs([],[B2:Index:rel(Z,Y,of,1)]))),X)),
                                                    app(P,X))))))).
 
 
-semlex(Cat,_,Index,Att-Att,Sem):-
+semlex(Cat,_,Index,Att-[sem:'HAS'|Att],Sem):-
    member(Cat,[((np:nb/n)/(n/n))\np,
                ((np/n)/(n/n))\np]), !,
    Sem = lam(N,lam(S,lam(P,lam(Q,merge(B1:drs([B1:[]:U],[]),
                                        merge(app(app(S,lam(X,merge(app(P,X),
-                                                                   app(N,lam(Y,B2:drs([],[B2:Index:rel(X,Y,of,0)])))))),U),
+                                                                   app(N,lam(Y,B2:drs([],[B2:Index:rel(X,Y,of,1)])))))),U),
                                              app(Q,U))))))).
 
-semlex((n/n)\n,_,Index,Att-Att,Sem):- !,
+semlex((n/n)\n,_,Index,Att-[sem:'HAS'|Att],Sem):- !,
    Sem = lam(N1,lam(N2,lam(X,merge(B1:drs([B1:[]:Y],[]),
                                    merge(app(N1,Y),
                                          merge(app(N2,X),
-                                               B2:drs([],[B2:Index:rel(X,Y,of,0)]))))))).
-semlex(Cat,_,Index,Att-Att,Sem):-
+                                               B2:drs([],[B2:Index:rel(X,Y,of,1)]))))))).
+semlex(Cat,_,Index,Att-[sem:'HAS'|Att],Sem):-
    member(Cat,[((s:wq/(s:q/np))/n)\(s:wq/(s:q/np)),
                ((s:wq\(s:dcl/np))/n)\(s:wq\(s:dcl/np)),
                ((s:wq/(s:dcl\np))/n)\(s:wq/(s:dcl\np))]), !,
-
-   XXX = lam(U,lam(E,app(U,lam(Y,alfa(def,merge(B:drs([B:[]:X],[B:Index:rel(X,Y,of,0)]),
+   XXX = lam(U,lam(E,app(U,lam(Y,alfa(def,merge(B:drs([B:[]:X],[B:Index:rel(X,Y,of,1)]),
                                           app(N,X)),
                                     app(app(V,lam(Q,app(Q,X))),E)))))),
-
    Sem = lam(NP,lam(N,lam(V,lam(P,app(app(NP,XXX),P))))).
 
-%  Sem = lam(NP,lam(N,lam(V,app(V,lam(P2,app(NP,lam(V2,app(V2,lam(Y,alfa(def,merge(B:drs([B:Index:X],[B:Index:rel(X,Y,of,0)]),app(N,X)),app(P2,X))))))))))).
+%  Sem = lam(NP,lam(N,lam(V,app(V,lam(P2,app(NP,lam(V2,app(V2,lam(Y,alfa(def,merge(B:drs([B:Index:X],[B:Index:rel(X,Y,of,1)]),app(N,X)),app(P2,X))))))))))).
 
 
 /* -------------------------------------------------------------------------
@@ -2574,7 +2588,6 @@ semlex(Cat,Sym,Index,Att-[sem:'AND'|Att],Sem):-
    member(Cat,[np\np, np/np]),
    member(Sym,[all,each]), !,
    Sem = lam(Q,lam(P,B1:drs([],[B1:[]:imp(merge(B2:drs([B2:Index:X],[]),app(Q,lam(Y,B3:drs([],[B3:[]:eq(X,Y)])))),app(P,X))]))).
-
 
 
 /* -------------------------------------------------------------------------

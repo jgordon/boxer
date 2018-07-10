@@ -2,11 +2,19 @@
 :- module(resolveDRT,[resolveDrs/1,goldAntecedent/2]).
 
 :- use_module(boxer(bindingViolation),[noBindingViolationDrs/1]).
-:- use_module(boxer(freeVarCheck),[boundVarCheckContext/2,drsCondition/2]).
+:- use_module(boxer(freeVarCheck),[boundVarCheckContext/2,
+                                   drsCondition/2]).
 :- use_module(library(lists),[member/2,append/3,select/3]).
 :- use_module(semlib(options),[option/2]).
-:- use_module(semlib(errors),[warning/2]).
+:- use_module(semlib(errors),[warning/2,gold/2]).
 :- use_module(boxer(categories),[att/3]).
+:- use_module(knowledge(antecedent),[extractFeaturesAna/2,
+                                     extractFeaturesAnt/2,
+                                     ana_ant_sort/3,
+                                     ana_ant_symb/3,
+                                     pos_ant/2,
+                                     sentence_position_ant/2,
+                                     same_sentence/4]).
 
 
 /* ========================================================================
@@ -20,11 +28,11 @@
    Managing Gold Standard Antecedents
 ======================================================================== */
 
-goldAntecedent(Index,Att):-
-   att(Att,antecedent,Antecedent), 
-   number(Antecedent), !,
-%  write(antecedent(Index,Antecedent)),nl,
-   assert(antecedent(Index,Antecedent)).
+goldAntecedent(Indices,Att):-
+   att(Att,antecedent,AntecedentIndex),
+   number(AntecedentIndex), !,
+%  write(antecedent(Indices,AntecedentIndex)),nl,
+   assert(antecedent(Indices,AntecedentIndex)).
 
 goldAntecedent(_,_).
 
@@ -70,7 +78,7 @@ resolveDRS(K:B,C1-C2,P1-P3):-
 resolveDRS(K:drs(D,C),C1-[K:drs(D,C)|C1],P):- !,
    resolveConds(C,[K:drs(D,C)|C1],P).
 
-resolveDRS(U,C-C,P-P):- 
+resolveDRS(U,C-C,P-P):-
    warning('unknown DRS in resolveDRS/3: ~p',[U]).
 
 
@@ -80,7 +88,7 @@ resolveDRS(U,C-C,P-P):-
 
 resolveConds([],_,P-P):- !.
 
-resolveConds([_:C|L],Context,P):- !, 
+resolveConds([_:C|L],Context,P):- !,
    resolveConds([C|L],Context,P).
 
 resolveConds([not(B)|C],Context,P1-P3):- !,
@@ -123,7 +131,7 @@ resolveConds([_|C],Context,P):- !,
 ======================================================================== */
 
 anaphoric(P:drs(PDom,PCon),F:drs(FDom,FCon),Context,Presups):-
-   member(F:_:_,PDom), \+ P==F,       % pick a free pointer (of DRS domain) 
+   member(F:_:_,PDom), \+ P==F,       % pick a free pointer (of DRS domain)
    \+ (member(K:_,Context), K==F),    % should not be in context (that would mean it is resolved already)
    \+ (member(K:_,Presups), K==F),    % should not be in presuppositions (would mean it's resolved already)
    anaphoricSet(PDom,F,FDom),
@@ -136,9 +144,9 @@ anaphoric(P:drs(PDom,PCon),F:drs(FDom,FCon),Context,Presups):-
 ======================================================================== */
 
 boundVar(X,P1,Dom):-
-   member(P2:_:Y,Dom), 
+   member(P2:_:Y,Dom),
    X==Y, !, \+ P1==P2.
-  
+
 boundVar(_,_,_).
 
 
@@ -203,8 +211,8 @@ project([],K,[_|P],P1-P2,Bs,Solutions):- !,
 
 % Match antecedent with anaphoric DRS
 % Look in same DRS for other antecedent
-% 
-project([K1:drs([K0:_:X|D],C)|Context],K2:B2,P,P1-P2,Bs,Solutions):-      
+%
+project([K1:drs([K0:_:X|D],C)|Context],K2:B2,P,P1-P2,Bs,Solutions):-
    K1==K0,
    match(K1,C,X,B2,Y,Score,Source), !,
    project([K1:drs(D,C)|Context],K2:B2,P,P1-P2,Bs,[solution(Score,K1:X,K2:Y,Source)|Solutions]).
@@ -230,27 +238,27 @@ project([_|Context],A,P,P1-P2,Bs,Solutions):- !,  % first argument can be an SDR
 
 /* ========================================================================
    Best (sorted on score, the lower the better!)
-======================================================================== */   
+======================================================================== */
 
-best([Solution|_],Bs,ADRS,P-[ADRS|P]):- 
+best([Solution|_],Bs,ADRS,P-[ADRS|P]):-
    Solution = solution(_Score,_,_,free),
    append(Bs,[ADRS|P],Context),
    boundVarCheckContext(Context,ADRS), !.
 
-best([Solution|_],Bs,ADRS,P-P):- 
+best([Solution|_],Bs,ADRS,P-P):-
    Solution = solution(_Score,X,Y,Reason),
    member(Reason,[local,global]),
    append(Bs,P,Context),
-   \+ \+ (X=Y, boundVarCheckContext(Context,ADRS)), !, 
+   \+ \+ (X=Y, boundVarCheckContext(Context,ADRS)), !,
    X=Y.
 
-best([Solution|_],Bs,ADRS,P-P):- 
+best([Solution|_],Bs,ADRS,P-P):-
    Solution = solution(_Score,X,Y,Reason),
    \+ member(Reason,[local,global,free]),
    append(Bs,P,Context),
-   \+ \+ (X=Y, 
-          boundVarCheckContext(Context,ADRS), 
-          noBindingViolationDrs(Bs)), !, 
+   \+ \+ (X=Y,
+          boundVarCheckContext(Context,ADRS),
+          noBindingViolationDrs(Bs)), !,
    X=Y.
 
 best([_|L],Bs,ADRS,P):- best(L,Bs,ADRS,P).
@@ -267,19 +275,19 @@ best([_|L],Bs,ADRS,P):- best(L,Bs,ADRS,P).
          -Matching Score,
          -Matching Type)
 
-======================================================================== */   
+======================================================================== */
 
 match(K1,C1,X,drs([_:_:Y|_],C2),Y,0,bow):-
    antecedent(I2,AntInd),           % there is a gold antecedent
    member( _:I2:_,C2),              % for the current anaphoric expression
-   member(K2:I1:Ant,C1), K1==K2,    % and the antecedent is part of the 
+   member(K2:I1:Ant,C1), K1==K2,    % and the antecedent is part of the
    member(AntInd,I1), !,            % DRS under consideration
    drsCondition(Z,Ant),
    Z==X.
- 
+
 match(K1,C1,X,drs(_,C2),Y,NewScore,P):-
    member( _:_:Ana,C2),
-   member(K2:_:Ant,C1), K1==K2, 
+   member(K2:_:Ant,C1), K1==K2,
    matching(Y^Ana,Z^Ant,Score,P), Z==X,
    NewScore is 1-Score,
    noconflicts(Y,C2,X,C1), !.
@@ -287,7 +295,7 @@ match(K1,C1,X,drs(_,C2),Y,NewScore,P):-
 
 /* ========================================================================
    Check for Conflicts
-======================================================================== */   
+======================================================================== */
 
 noconflicts(X,_,Y,C2):-                            %%% resolving should
     \+ \+ ( X=Y,                                   %%% not result in X=X
@@ -298,7 +306,16 @@ noconflicts(X,_,Y,C2):-                            %%% resolving should
 
 /* ========================================================================
    Matching (anaphor, antecedent)
-======================================================================== */   
+======================================================================== */
+
+% amr matching
+matching(Y^pred(Y,i,n,1),  Z^pred(Z,i,n,1),  1.0,n:i  ):-    option('--semantics',amr).
+matching(Y^pred(Y,you,n,1),Z^pred(Z,you,n,1),1.0,n:you):-    option('--semantics',amr).
+matching(Y^pred(Y,he,n,1), Z^pred(Z,he,n,1), 1.0,n:he):-     option('--semantics',amr).
+matching(Y^pred(Y,she,n,1),Z^pred(Z,she,n,1),1.0,n:she):-    option('--semantics',amr).
+matching(Y^pred(Y,it,n,1),Z^pred(Z,it,n,1),1.0,n:she):-      option('--semantics',amr).
+matching(Y^pred(Y,we,n,1),Z^pred(Z,we,n,1),1.0,n:she):-      option('--semantics',amr).
+matching(Y^pred(Y,they,n,1),Z^pred(Z,they,n,1),1.0,n:she):-  option('--semantics',amr).
 
 % time
 matching(Y^pred(Y,now,a,1),Z^pred(Z,now,a,1),0.99,a:now).
@@ -307,15 +324,15 @@ matching(Y^pred(Y,now,a,1),Z^pred(Z,now,a,1),0.99,a:now).
 matching(Y^pred(Y,male,n,2),Z^named(Z,S,per,_),0.9,per:S).
 matching(Y^pred(Y,male,n,2),Z^named(Z,S,_,_),0.1,per:S).
 matching(Y^pred(Y,male,n,2),Z^pred(Z,male,n,2),0.99,n:male).
-matching(Y^pred(Y,male,n,2),Z^pred(Z,S,n,_),0.5,n:S):-  option('--x',false).
-matching(Y^pred(Y,male,n,2),Z^card(Z,_,_),0.1,card):- option('--x',false).
+matching(Y^pred(Y,male,n,2),Z^pred(Z,S,n,_),0.5,n:S).
+matching(Y^pred(Y,male,n,2),Z^card(Z,_,_),0.1,card).
 
 % she
 matching(Y^pred(Y,female,n,2),Z^named(Z,S,per,_),0.9,per:S).
 matching(Y^pred(Y,female,n,2),Z^named(Z,S,_,_),0.1,per:S).
 matching(Y^pred(Y,female,n,2),Z^pred(Z,female,n,2),0.99,n:female).
-matching(Y^pred(Y,female,n,2),Z^pred(Z,S,n,_),0.5,n:S):-  option('--x',false).
-matching(Y^pred(Y,female,n,2),Z^card(Z,_,_),0.1,card):- option('--x',false).
+matching(Y^pred(Y,female,n,2),Z^pred(Z,S,n,_),0.5,n:S).
+matching(Y^pred(Y,female,n,2),Z^card(Z,_,_),0.1,card).
 
 % it
 matching(Y^pred(Y,neuter,a,_),Z^named(Z,S,per,_),0.1,per:S).
@@ -324,20 +341,20 @@ matching(Y^pred(Y,neuter,a,_),Z^pred(Z,neuter,a,_),0.99,a:neuter).
 matching(Y^pred(Y,neuter,a,_),Z^pred(Z,S,n,_),0.5,n:S).
 
 % they, them, theirs, this, that, those, these
-matching(Y^pred(Y,thing,n,12),Z^pred(Z,S,n,_),0.5,n:S):-  option('--x',false).
-matching(Y^pred(Y,thing,n,12),Z^named(Z,S,_,_),0.1,per:S):- option('--x',false).
+matching(Y^pred(Y,thing,n,12),Z^pred(Z,S,n,_),0.5,n:S):-    \+ option('--semantics',amr).
+matching(Y^pred(Y,thing,n,12),Z^named(Z,S,_,_),0.1,per:S):- \+ option('--semantics',amr).
 
 % I, me, mine, you, yours, we, us, ours, myself, yourself, ourselves
-matching(Y^pred(Y,person,n,1),Z^pred(Z,S,n,_),0.1,n:S):-    option('--x',false).
-matching(Y^pred(Y,person,n,1),Z^named(Z,S,per,_),0.8,per:S):- option('--x',false).
-matching(Y^pred(Y,person,n,1),Z^named(Z,S,_,_),0.5,per:S):-   option('--x',false).
+matching(Y^pred(Y,person,n,1),Z^pred(Z,S,n,_),0.1,n:S):-      \+ option('--semantics',amr).
+matching(Y^pred(Y,person,n,1),Z^named(Z,S,per,_),0.8,per:S):- \+ option('--semantics',amr).
+matching(Y^pred(Y,person,n,1),Z^named(Z,S,_,_),0.5,per:S):-   \+ option('--semantics',amr).
 
 % the
-matching(Y^pred(Y,S,n,_),Z^pred(Z,S,n,_),0.9,n:S).
+matching(Y^pred(Y,S,n,_),Z^pred(Z,S,n,_),0.9,n:S):- \+ option('--semantics',amr).
 
 % names
-matching(Y^named(Y,S,T,_),Z^named(Z,S,T,_),0.9,per:S).
-matching(Y^named(Y,S,_,_),Z^named(Z,S,_,_),0.7,per:S).
+matching(Y^named(Y,S,T,_),Z^named(Z,S,T,_),0.9,per:S):- \+ option('--semantics',amr).
+matching(Y^named(Y,S,_,_),Z^named(Z,S,_,_),0.7,per:S):- \+ option('--semantics',amr).
 
 % timex
-matching(Y^timex(Y,date(_:D1,_:D2,_:D3,_:D4)),Z^timex(Z,date(_:D1,_:D2,_:D3,_:D4)),0.9,timex).
+matching(Y^timex(Y,date(_:D1,_:D2,_:D3,_:D4)),Z^timex(Z,date(_:D1,_:D2,_:D3,_:D4)),0.9,timex):- \+ option('--semantics',amr).
