@@ -6,7 +6,8 @@
            roles/4,
            sense/4,
            att/3,
-           rel/3
+           rel/3,
+           role/3
           ]).
 
 :- use_module(boxer(slashes)).
@@ -41,6 +42,9 @@ sense(_Sym,_Cat,Sense,A-[sense:Sense|A]):- Sense = 1.
 rel(_,Att-Att,Rel):- att(Att,relation,Rel), \+ Rel=unknown, !.
 rel(Rel,Att-[relation:Rel|Att],Rel).
 
+role(_,Att-Att,Roles):- att(Att,verbnet,Roles), \+ Roles=[], !.
+role(Roles,Att-[verbnet:Roles|Att],Roles).
+
 
 /* -------------------------------------------------------------------------
    Thematic Roles introduced by PPs
@@ -64,7 +68,7 @@ roles(Verb,s:pss\np,[Role],A):- roles(Verb,(s:dcl\np)/np,[Role,_],A), !.
 
 
 /* -------------------------------------------------------------------------
-   Thematic Roles: standard case 
+   Thematic Roles: standard case
 ------------------------------------------------------------------------- */
 
 roles(_,_,Roles,A-A):- option('--roles',verbnet), att(A,verbnet,Roles), \+ Roles=[], !.
@@ -92,7 +96,7 @@ roles(Verb,(s:M\np)/(s:X\np),Roles,A):- !, roles(Verb,(s:M\np)/s:X,Roles,A).
    Thematic Roles: no roles could be assigned
 ------------------------------------------------------------------------- */
 
-roles(Verb,Cat,Roles,A-A):- 
+roles(Verb,Cat,Roles,A-A):-
    warning('role assignment failure for ~p with category ~p',[Verb,Cat]),
    Roles = [].
 
@@ -306,15 +310,15 @@ category_type((((s:M/np)/pp)/pp)/np,Verb,Cat,[Role1,Role2],M):- !, Cat = npVnppp
    Sentence
 ------------------------------------------------------------------------- */
 
-category(s, s:X,    X).   
+category(s, s:X,    X).
 
 
 /* -------------------------------------------------------------------------
     Adjectives
 ------------------------------------------------------------------------- */
 
-category(adj,    n/n,     _).      
-category(adj,    n\n,     _).       
+category(adj,    n/n,     _).
+category(adj,    n\n,     _).
 
 
 /* -------------------------------------------------------------------------
@@ -340,81 +344,35 @@ category(smod, s:dcl/s:inv, _).
 ------------------------------------------------------------------------- */
 
 category(comp, s:poss/s:dcl, _).
-
 category(comp, s:qem/s:dcl, _).
 category(comp, s:bem/s:b, _).
 category(comp, s:em/s:dcl, _).
 category(comp, s:em/s:b, _).
-               
+
 
 /* -------------------------------------------------------------------------
    Subject or Object Control Verbs
 ------------------------------------------------------------------------- */
 
-%category(socv, ((s:dcl\np)/(s:to\np))/np,    [agent,patient], dcl).
-%category(socv, ((s:ng\np)/(s:to\np))/np,     [agent,patient],  ng). 
-%category(socv, ((s:b\np)/(s:to\np))/np,      [agent,patient],   b). 
-%category(socv, ((s:pt\np)/(s:to\np))/np,     [agent,patient],  pt). 
+category(socv, ((s:dcl\np)/(s:b\np))/np,     [agent,patient], dcl).
+category(socv, ((s:ng\np)/(s:b\np))/np,      [agent,patient],  ng).
+category(socv, ((s:b\np)/(s:b\np))/np,       [agent,patient],   b).
+category(socv, ((s:pt\np)/(s:b\np))/np,      [agent,patient],  pt).
 
-category(socv, ((s:dcl\np)/(s:b\np))/np,     [agent,patient], dcl). 
-category(socv, ((s:ng\np)/(s:b\np))/np,      [agent,patient],  ng). 
-category(socv, ((s:b\np)/(s:b\np))/np,       [agent,patient],   b). 
-category(socv, ((s:pt\np)/(s:b\np))/np,      [agent,patient],  pt). 
-
-category(socv, ((s:dcl\np)/(s:ng\np))/np,    [agent,patient], dcl). 
-category(socv, ((s:b\np)/(s:ng\np))/np,      [agent,patient],   b). 
-category(socv, ((s:ng\np)/(s:ng\np))/np,     [agent,patient],  ng). 
+category(socv, ((s:dcl\np)/(s:ng\np))/np,    [agent,patient], dcl).
+category(socv, ((s:b\np)/(s:ng\np))/np,      [agent,patient],   b).
+category(socv, ((s:ng\np)/(s:ng\np))/np,     [agent,patient],  ng).
 category(socv, ((s:pt\np)/(s:ng\np))/np,     [agent,patient],  pt).
 
-category(socv, ((s:dcl\np)/(s:adj\np))/np,   [agent,patient], dcl). 
-category(socv, ((s:b\np)/(s:adj\np))/np,     [agent,patient],   b).  
-category(socv, ((s:ng\np)/(s:adj\np))/np,    [agent,patient],  ng). 
-category(socv, ((s:pt\np)/(s:adj\np))/np,    [agent,patient],  pt). 
+category(socv, ((s:dcl\np)/(s:adj\np))/np,   [agent,patient], dcl).
+category(socv, ((s:b\np)/(s:adj\np))/np,     [agent,patient],   b).
+category(socv, ((s:ng\np)/(s:adj\np))/np,    [agent,patient],  ng).
+category(socv, ((s:pt\np)/(s:adj\np))/np,    [agent,patient],  pt).
 
-category(socv, ((s:dcl\np)/(s:pss\np))/np,   [agent,patient], dcl). 
-category(socv, ((s:b\np)/(s:pss\np))/np,     [agent,patient],   b). 
-category(socv, ((s:ng\np)/(s:pss\np))/np,    [agent,patient],  ng). 
+category(socv, ((s:dcl\np)/(s:pss\np))/np,   [agent,patient], dcl).
+category(socv, ((s:b\np)/(s:pss\np))/np,     [agent,patient],   b).
+category(socv, ((s:ng\np)/(s:pss\np))/np,    [agent,patient],  ng).
 
-category(socv, ((s:dcl\np)/(s:pt\np))/np,    [agent,patient], dcl). 
-category(socv, ((s:b\np)/(s:pt\np))/np,      [agent,patient],   b). 
-category(socv, ((s:ng\np)/(s:pt\np))/np,     [agent,patient],  ng). 
-
-
-
-
-/* -------------------------------------------------------------------------
-   Control Verbs
-------------------------------------------------------------------------- */
-
-%category(cv, (s:adj\np)/(s:to\np),        [agent,theme], _,        adj).
-%category(cv, (s:adj\np)/(s:ng\np),        [agent,theme], _,        adj).
-
-%category(cv, (s:dcl\np)/(s:to\np),        [agent,theme], _,        dcl).
-%category(cv, (s:pt\np)/(s:to\np),         [agent,theme], _,         pt).
-%category(cv, (s:pss\np)/(s:to\np),        [patient,theme], _,      pss).
-%category(cv, (s:ng\np)/(s:to\np),         [agent,theme], _,         ng).
-%category(cv, (s:b\np)/(s:to\np),          [agent,theme], _,          b).
-
-%category(cv, (s:pt\np)/(s:ng\np),         [agent,theme], _,        pt).
-
-%category(cv, (s:b\np)/(s:ng\np),          [agent,theme], _,          b).
-%category(cv, (s:pss\np)/(s:ng\np),        [patient,theme], _,      pss).
-
-%category(cv, (s:ng\np)/(s:dcl\np),        [agent,theme], _,         ng).
-%category(cv, (s:pss\np)/(s:dcl\np),       [patient,theme], _,      pss).
-
-%category(cv, (s:pss\np)/(s:b\np),         [patient,theme], _,      pss).
-%category(cv, (s:ng\np)/(s:b\np),          [agent,theme], _,         ng).
-%category(cv, (s:pt\np)/(s:b\np),          [agent,theme], _,         pt).
-
-%category(cv, (s:ng\np)/(s:ng\np),         [agent,theme], 'VBG',     ng).
-%category(cv, (s:b\np)/(s:b\np),           [agent,theme], 'VB',       b).  % e.g. will help draw
-
-%category(cv, (s:ng\np)/(s:adj\np),        [agent,theme], _,         ng).
-%category(cv, (s:pt\np)/(s:adj\np),        [agent,theme], _,         pt).
-
-%category(cv, (s:pss\np)/(s:pt\np),        [patient,theme], _,      pss).
-%category(cv, (s:pss\np)/(s:adj\np),        [patient,theme], _,      pss).
-%category(cv, (s:pss\np)/(s:pss\np),       [patient,theme], 'VBN',  pss).
-%category(cv, (s:pss\np)/(s:pss\np),       [patient,theme], 'VBD',  pss).
-
+category(socv, ((s:dcl\np)/(s:pt\np))/np,    [agent,patient], dcl).
+category(socv, ((s:b\np)/(s:pt\np))/np,      [agent,patient],   b).
+category(socv, ((s:ng\np)/(s:pt\np))/np,     [agent,patient],  ng).
