@@ -65,7 +65,7 @@ roles(Verb,(s:pss\np)/s:M,[Role1,Role2],A):- roles(Verb,((s:dcl\np)/s:M)/np,[Rol
 roles(Verb,(s:pss\np)/pp,[Role],A):- roles(Verb,((s:dcl\np)/pp)/np,[Role,_],A), !.
 roles(Verb,((s:pss\np)/np)/pp,[Role1,Role2],A):- roles(Verb,(((s:dcl\np)/np)/pp)/np,[Role1,Role2,_],A), !.
 roles(Verb,s:pss\np,[Role],A):- roles(Verb,(s:dcl\np)/np,[Role,_],A), !.
-
+roles(Verb,((s:M\s:T)\np)/np,Roles,A):- roles(Verb,((s:M\np)/s:T)/np,Roles,A), !.
 
 /* -------------------------------------------------------------------------
    Thematic Roles: standard case
@@ -105,8 +105,8 @@ roles(Verb,Cat,Roles,A-A):-
    Proto (roles are listed in the order of arguments, not surface order!)
 ------------------------------------------------------------------------- */
 
-proto(_, s:adj\np,           [topic]):- !.
-proto(_, (s:adj\np)\np,      [theme,topic]):- !.
+proto(_, s:adj\np,           ['Holder']):- option('--semantics',amr), !.
+proto(_, (s:adj\np)\np,      ['Theme','Holder']):- option('--semantics',amr), !.
 proto(_, s:_\np,             [agent]):- !.
 proto(_, (s:_\np)/np,        [patient,agent]):- !.
 proto(_, (s:_\np)/s:_,       [theme,agent]):- !.
@@ -348,31 +348,3 @@ category(comp, s:qem/s:dcl, _).
 category(comp, s:bem/s:b, _).
 category(comp, s:em/s:dcl, _).
 category(comp, s:em/s:b, _).
-
-
-/* -------------------------------------------------------------------------
-   Subject or Object Control Verbs
-------------------------------------------------------------------------- */
-
-category(socv, ((s:dcl\np)/(s:b\np))/np,     [agent,patient], dcl).
-category(socv, ((s:ng\np)/(s:b\np))/np,      [agent,patient],  ng).
-category(socv, ((s:b\np)/(s:b\np))/np,       [agent,patient],   b).
-category(socv, ((s:pt\np)/(s:b\np))/np,      [agent,patient],  pt).
-
-category(socv, ((s:dcl\np)/(s:ng\np))/np,    [agent,patient], dcl).
-category(socv, ((s:b\np)/(s:ng\np))/np,      [agent,patient],   b).
-category(socv, ((s:ng\np)/(s:ng\np))/np,     [agent,patient],  ng).
-category(socv, ((s:pt\np)/(s:ng\np))/np,     [agent,patient],  pt).
-
-category(socv, ((s:dcl\np)/(s:adj\np))/np,   [agent,patient], dcl).
-category(socv, ((s:b\np)/(s:adj\np))/np,     [agent,patient],   b).
-category(socv, ((s:ng\np)/(s:adj\np))/np,    [agent,patient],  ng).
-category(socv, ((s:pt\np)/(s:adj\np))/np,    [agent,patient],  pt).
-
-category(socv, ((s:dcl\np)/(s:pss\np))/np,   [agent,patient], dcl).
-category(socv, ((s:b\np)/(s:pss\np))/np,     [agent,patient],   b).
-category(socv, ((s:ng\np)/(s:pss\np))/np,    [agent,patient],  ng).
-
-category(socv, ((s:dcl\np)/(s:pt\np))/np,    [agent,patient], dcl).
-category(socv, ((s:b\np)/(s:pt\np))/np,      [agent,patient],   b).
-category(socv, ((s:ng\np)/(s:pt\np))/np,     [agent,patient],  ng).
