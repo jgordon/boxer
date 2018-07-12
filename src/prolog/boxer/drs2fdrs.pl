@@ -8,12 +8,44 @@
 
 
 /*========================================================================
+   Dynamic  Predicates
+========================================================================*/
+
+:- dynamic refcounter/2.
+
+
+/*========================================================================
+  Init Counters
+========================================================================*/
+
+init:-
+   retractall(refcounter(_,_)),
+   assert(refcounter(116,1)), % t
+   assert(refcounter(118,1)), % l
+   assert(refcounter(120,1)), % x
+   assert(refcounter(115,1)), % s
+   assert(refcounter(112,1)), % p
+   assert(refcounter(101,1)), % e
+   assert(refcounter(102,1)), % f
+   assert(refcounter(107,1)), % k
+   assert(refcounter( 98,1)). % b
+
+
+
+/*========================================================================
    Main Predicates
 ========================================================================*/
 
-instDrs(B):- instDrs(B,0,_).
+instDrs(B):-
+   init,
+   instantDrs(B).
 
-instDrs(B,N):- instDrs(B,0,N).
+instDrs(B,N):-
+   init,
+   instantDrs(B),
+   refcounter(107,K),
+   refcounter(101,E),
+   N is K+E.
 
 
 /*========================================================================
@@ -29,13 +61,28 @@ avar(Var):- functor(Var,'$VAR',1).
    Referent
 ========================================================================*/
 
-ref(X,Ref,Code,Y):-
+ref(Ref,Code):-
    var(Ref), !,
+   getIndex(Code,X),
    number_codes(X,Codes),
-   atom_codes(Ref,[Code|Codes]),
-   Y is X + 1.
+   atom_codes(Ref,[Code|Codes]).
 
-ref(X,_,_,X).
+ref(_,_).
+
+
+/*========================================================================
+   Get Index
+========================================================================*/
+
+getIndex(Sort,X):-
+   refcounter(Sort,X), !,
+   retract(refcounter(Sort,X)),
+   Y is X + 1,
+   assert(refcounter(Sort,Y)).
+
+getIndex(Sort,X):-
+   \+ Sort = 120,
+   getIndex(120,X).
 
 
 /*========================================================================
@@ -64,116 +111,100 @@ sortref(_,_,120).
    Instantiating DRSs
 ========================================================================*/
 
-instDrs(Var,L1,L2):-
-   var(Var), !, 
-   ref(L1,Var,102,L2).
+instantDrs(Var):- var(Var), !, ref(Var,102).
 
-instDrs(Var,L1,L2):-
-   atom(Var), !,
-   L2 = L1. 
+instantDrs(Var):- atom(Var), !.
 
-instDrs(Var,L1,L2):-
-   Var =.. ['$VAR',_], !,
-   L2 = L1. 
+instantDrs(Var):- Var =.. ['$VAR',_], !.
 
-instDrs(drs([_:Ref|Dom],Conds),L1,L3):- !,
+instantDrs(drs([_:Ref|Dom],Conds)):- !,
    sortref(Ref,Conds,Sort),
-   ref(L1,Ref,Sort,L2), 
-   instDrs(drs(Dom,Conds),L2,L3).
+   ref(Ref,Sort),
+   instantDrs(drs(Dom,Conds)).
 
-instDrs(B:drs([Lab:_:Ref|Dom],Conds),L1,L4):- !,
-   ref(L1,Lab,98,L2), 
+instantDrs(B:drs([Lab:_:Ref|Dom],Conds)):- !,
+   ref(Lab,98),
    sortref(Ref,Conds,Sort),
-   ref(L2,Ref,Sort,L3), 
-   instDrs(B:drs(Dom,Conds),L3,L4).
+   ref(Ref,Sort),
+   instantDrs(B:drs(Dom,Conds)).
 
-instDrs(B:drs([],Conds),L1,L3):- !,
-   ref(L1,B,98,L2), 
-   instConds(Conds,L2,L3).
+instantDrs(B:drs([],Conds)):- !,
+   ref(B,98),
+   instantConds(Conds).
 
-instDrs(drs([],Conds),L1,L2):- !,
-   instConds(Conds,L1,L2).
+instantDrs(drs([],Conds)):- !,
+   instantConds(Conds).
 
-instDrs(merge(A1,A2),L1,L3):- !,
-   instDrs(A1,L1,L2),
-   instDrs(A2,L2,L3).
+instantDrs(merge(A1,A2)):- !,
+   instantDrs(A1),
+   instantDrs(A2).
 
-instDrs(sdrs([],_),L,L):- !.
+instantDrs(sdrs([],_)):- !.
 
-instDrs(sdrs([X|L],C),L1,L3):- !,
-   instDrs(X,L1,L2),
-   instDrs(sdrs(L,C),L2,L3).
+instantDrs(sdrs([X|L],C)):- !,
+   instantDrs(X),
+   instantDrs(sdrs(L,C)).
 
-instDrs(lab(K,B),L1,L3):- !,
-   ref(L1,K,107,L2),
-   instDrs(B,L2,L3).
+instantDrs(lab(K,B)):- !,
+   ref(K,107),
+   instantDrs(B).
 
-instDrs(sub(B1,B2),L1,L3):- !,
-   instDrs(B1,L1,L2),
-   instDrs(B2,L2,L3).
+instantDrs(sub(B1,B2)):- !,
+   instantDrs(B1),
+   instantDrs(B2).
 
-instDrs(alfa(_,A1,A2),L1,L3):- !,
-   instDrs(A1,L1,L2),
-   instDrs(A2,L2,L3).
+instantDrs(alfa(_,A1,A2)):- !,
+   instantDrs(A1),
+   instantDrs(A2).
 
-instDrs(app(A1,A2),L1,L3):- !,
-   instDrs(A1,L1,L2),
-   instDrs(A2,L2,L3).
+instantDrs(app(A1,A2)):- !,
+   instantDrs(A1),
+   instantDrs(A2).
 
-instDrs(lam(X,A),L1,L3):- !,
-   ref(L1,X,118,L2),
-   instDrs(A,L2,L3).
+instantDrs(lam(X,A)):- !,
+   ref(X,118),
+   instantDrs(A).
 
 
 /*========================================================================
    Instantiating DRS-Conditions
 ========================================================================*/
 
-instConds([],L,L).
+instantConds([]).
 
-instConds([Label:_:Cond|Conds],L1,L4):- !,
-   ref(L1,Label,98,L2),
-   instCond(Cond,L2,L3),
-   instConds(Conds,L3,L4).
+instantConds([Label:_:Cond|Conds]):- !,
+   ref(Label,98),
+   instantCond(Cond),
+   instantConds(Conds).
 
-instConds([_:Cond|Conds],L1,L3):- !,
-   instCond(Cond,L1,L2),
-   instConds(Conds,L2,L3).
+instantConds([_:Cond|Conds]):- !,
+   instantCond(Cond),
+   instantConds(Conds).
 
 
 /*========================================================================
    Instantiating DRS-Condition
 ========================================================================*/
 
-instCond(imp(A1,A2),L1,L3):- !,
-   instDrs(A1,L1,L2),
-   instDrs(A2,L2,L3).
+instantCond(imp(A1,A2)):- !, instantDrs(A1), instantDrs(A2).
 
-instCond(or(A1,A2),L1,L3):- !,
-   instDrs(A1,L1,L2),
-   instDrs(A2,L2,L3).
+instantCond(or(A1,A2)):- !,  instantDrs(A1), instantDrs(A2).
 
-instCond(duplex(_,A1,_,A2),L1,L3):- !,
-   instDrs(A1,L1,L2),
-   instDrs(A2,L2,L3).
+instantCond(duplex(_,A1,_,A2)):- !, instantDrs(A1), instantDrs(A2).
 
-instCond(not(A),L1,L2):- !,
-   instDrs(A,L1,L2).
+instantCond(not(A)):- !, instantDrs(A).
 
-instCond(nec(A),L1,L2):- !,
-   instDrs(A,L1,L2).
+instantCond(nec(A)):- !, instantDrs(A).
 
-instCond(pos(A),L1,L2):- !,
-   instDrs(A,L1,L2).
+instantCond(pos(A)):- !, instantDrs(A).
 
-instCond(prop(_,A),L1,L2):- !,
-   instDrs(A,L1,L2).
+instantCond(prop(_,A)):- !, instantDrs(A).
 
-instCond(_,L,L).
+instantCond(_).
 
 
 /*========================================================================
-   Eliminate Equality from DRS 
+   Eliminate Equality from DRS
 ========================================================================*/
 
 eqDrs(xdrs(Tags,DRS1),xdrs(Tags,DRS2)):-
@@ -262,11 +293,11 @@ elimEqConds([B:I:prop(X,A1)|Conds1],[B:I:prop(X,B1)|Conds2],D1,D2):- !,
    elimEqDrs(A1,B1),
    elimEqConds(Conds1,Conds2,D1,D2).
 
-elimEqConds([_:_:eq(X,Y)|Conds1],Conds2,D1,D2):- 
+elimEqConds([_:_:eq(X,Y)|Conds1],Conds2,D1,D2):-
    select(_:Z,D1,D3), X==Z, !, X=Y,
    elimEqConds(Conds1,Conds2,D3,D2).
 
-elimEqConds([_:_:eq(X,Y)|Conds1],Conds2,D1,D2):- 
+elimEqConds([_:_:eq(X,Y)|Conds1],Conds2,D1,D2):-
    select(_:Z,D1,D3), Y==Z, !, X=Y,
    elimEqConds(Conds1,Conds2,D3,D2).
 

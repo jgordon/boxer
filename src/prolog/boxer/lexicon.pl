@@ -424,62 +424,6 @@ semlex(n,Sym,Index,Att-Att,Sem):- !,
 
 
 /* -------------------------------------------------------------------------
-   Relational nouns
-------------------------------------------------------------------------- */
-
-semlex(n/pp,Sym,Index,Att-Att,Sem):-
-   att(Att,pos,Pos),
-   member(Pos,['NNP','NNPS']), !,
-   att(Att,namex,NE), neClassType(NE,Class,Type),
-   Sem = lam(P,lam(X,merge(B:drs([],[B:Index:named(X,Sym,Class,Type)]),
-                           app(P,X)))).
-
-
-semlex(n/pp,Sym,Index,Att-Att,Sem):- !,
-   att(Att,sense,Sense),
-   Sem = lam(P,lam(X,merge(B:drs([],[B:Index:pred(X,Sym,n,Sense)]),
-                           app(P,X)))).
-
-semlex(n/pp,Sym,Index,Att-Att,Sem):- !,
-   att(Att,sense,Sense),
-   Sem = lam(P,lam(X,merge(B:drs([[]:Y],
-                               [B:Index:pred(Y,Sym,n,Sense),
-                                B:[]:role(X,Y,actor,1),
-                                B:[]:pred(X,person,n,1)]),
-                           app(P,Y)))).
-
-semlex((n/pp)/pp,Sym,Index,Att-Att,Sem):- !,
-   att(Att,sense,Sense),
-   Sem = lam(P1,lam(P2,lam(X,merge(B:drs([],[B:Index:pred(X,Sym,n,Sense)]),
-                                   merge(app(P1,X),app(P2,X)))))).
-
-semlex(((n/pp)/pp)/pp,Sym,Index,Att-Att,Sem):- !,
-   att(Att,sense,Sense),
-   Sem = lam(P1,lam(P2,lam(P3,lam(X,merge(B:drs([],[B:Index:pred(X,Sym,n,Sense)]),
-                                          merge(app(P1,X),merge(app(P2,X),app(P3,X)))))))).
-
-semlex(n/(s:_\np),Sym,Index,Att-Att,Sem):- !,
-   att(Att,sense,Sense),
-   closing(CC),
-   Sem = lam(VP,lam(X,merge(B:drs([],[B:Index:pred(X,Sym,n,Sense)]),
-                            app(app(VP,lam(P,app(P,X))),CC)))).
-
-semlex((n/(s:_\np))/pp,Sym,Index,Att-Att,Sem):- !,
-   att(Att,sense,Sense),
-   closing(CC),
-   Sem = lam(P,lam(VP,lam(X,merge(B:drs([],[B:Index:pred(X,Sym,n,Sense)]),
-                                  merge(app(app(VP,lam(P,app(P,X))),CC),
-                                        app(P,X)))))).
-
-semlex((n/pp)/(s:_\np),Sym,Index,Att-Att,Sem):- !,
-   att(Att,sense,Sense),
-   closing(CC),
-   Sem = lam(VP,lam(P,lam(X,merge(B:drs([],[B:Index:pred(X,Sym,n,Sense)]),
-                                  merge(app(app(VP,lam(P,app(P,X))),CC),
-                                        app(P,X)))))).
-
-
-/* -------------------------------------------------------------------------
    Determiners
 ------------------------------------------------------------------------- */
 
@@ -1070,25 +1014,6 @@ semlex(n/n,only,Index,Att-Att,Sem):- !,
 
 
 /* -------------------------------------------------------------------------
-   Negation Adjectives
-------------------------------------------------------------------------- */
-
-%semlex(Cat,Sym,_,Index,Att-Att,Sem):-
-%   category(adj,Cat,_),
-%   option('--x',true),
-%   negprefix(_, Sym, Prefix, Core), !,
-%   Sem = lam(P,lam(X,B1:drs([],[B1:Index:not(merge(B2:drs([],[B2:Index:pred(X,Prefix,a,71),
-%                                                              B2:Index:pred(X,Core,a,1)]),app(P,X)))]))).
-
-%semlex(Cat,Sym,_,Index,Att-Att,Sem):-
-%   category(adj,Cat,_),
-%   option('--x',true),
-%   negsuffix(_, Sym, Suffix, Core), !,
-%   Sem = lam(P,lam(X,B1:drs([],[B1:Index:not(merge(B2:drs([],[B2:Index:pred(X,Suffix,a,72),
-%                                                              B2:Index:pred(X,Core,a,1)]),app(P,X)))]))).
-
-
-/* -------------------------------------------------------------------------
    Presuppositional Adjectives
 ------------------------------------------------------------------------- */
 
@@ -1408,20 +1333,6 @@ semlex(Cat,Sym,Index,Att-Att,Sem):-
    Sem = lam(Z,lam(P,lam(X,merge(B:drs([],[B:Index:card(X,Digit,eq)]),
                                  app(app(Z,P),X))))).
 
-
-/* -------------------------------------------------------------------------
-   Compound superlative adjectives
-------------------------------------------------------------------------- */
-
-semlex(Cat,Sym,Index,Att-Att,Sem):-
-   \+ option('--semantics',drg),
-   att(Att,pos,'JJS'),
-   member(Cat,[(n/n)/(n/n),        %%%% Example: ... fastest growing segment
-               (n/n)\(n/n)]), !,   %%%% Example: ... third largest bank (incorrect semantics!)
-   Sem = lam(Z,lam(P,lam(X,merge(app(app(Z,P),X),
-                                 B1:drs([],[B1:[]:imp(merge(B2:drs([B2:[]:Y],[B2:[]:not(B3:drs([],[B3:[]:eq(X,Y)]))]),
-                                                              app(app(Z,P),Y)),
-                                                        B4:drs([],[B4:Index:rel(X,Y,Sym,0)]))]))))).
 
 /* -------------------------------------------------------------------------
    Intensifiers
@@ -1844,22 +1755,23 @@ semlex(Cat,Sym,Index,Att-Att,Sem):-
 %  Sem = lam(PP,lam(NP,lam(P,app(NP,lam(X,merge(B:drs([],[B:Index:pred(X,Sym,n,Sense)]),merge(app(PP,X),app(P,X)))))))).
    Sem = lam(PP,lam(NP,lam(P,app(NP,lam(X,merge(B:drs([B:[]:Y],[B:Index:rel(X,Y,Sym,Sense)]),merge(app(PP,Y),app(P,X)))))))).
 
-semlex(Cat,Tok,Index,Att-Att,Sem):-
+semlex(Cat,Tok,Index,Att-[sem:'NOT'|Att],Sem):-
+   \+ option('--semantics',amr),
    Tok = without, Sym = with,
    member(Cat,[(np\np)/np,(np/np)/np]), !,
    Sem = lam(Q1,lam(Q2,lam(P,app(Q2,lam(X,merge(B1:drs([],[B1:Index:not(app(Q1,lam(Y,B2:drs([],[B2:Index:rel(X,Y,Sym,0)]))))]),app(P,X))))))).
 
-semlex(Cat,Sym,Index,Att-Att,Sem):-
+semlex(Cat,Sym,Index,Att-[sem:'RLI'|Att],Sem):-
    member(Cat,[(np\np)/np,(np\np)\np,(np/np)/np]),
    att(Att,scope,inv), !,
    Sem = lam(Q1,lam(Q2,lam(P,app(Q1,lam(Y,app(Q2,lam(X,merge(B:drs([],[B:Index:rel(X,Y,Sym,0)]),app(P,X))))))))).
 
-semlex(Cat,Sym,Index,Att-Att,Sem):-
+semlex(Cat,Sym,Index,Att-[sem:'REL'|Att],Sem):-
    member(Cat,[(np\np)/np,(np\np)\np,(np/np)/np]), !,
    Sem = lam(Q1,lam(Q2,lam(P,app(Q2,lam(X,app(Q1,lam(Y,merge(B:drs([],[B:Index:rel(X,Y,Sym,0)]),app(P,X))))))))).
 
 % permafrost three meters below the surface
-semlex(Cat,Sym,Index,Att-Att,Sem):-
+semlex(Cat,Sym,Index,Att-[sem:'REL'|Att],Sem):-
    Cat = ((np\np)\np)/np, !,
    Sem = lam(Q1,lam(Q2,lam(Q3,lam(P,app(Q3,lam(X,app(Q2,lam(Y,app(Q1,lam(Z,merge(B:drs([],[B:[]:rel(X,Y,rel,0),
                                                                                            B:Index:rel(Y,Z,Sym,0)]),
@@ -2242,23 +2154,37 @@ semlex(Cat,Lemma,Index,Att1-[sem:'DST'|Att2],Sem):-
    member(Cat,[(s:X/s:X)/n,(s:X\s:X)/n]), !,
    role(['Time'],Att1-Att2,[Role]),
    Sem = lam(P,lam(S,lam(F,alfa(def,merge(B1:drs([B1:[]:Y],[B1:Index:pred(Y,that,r,2)]),app(P,Y)),
-                                    app(S,lam(E,merge(B2:drs([],[B2:[]:role(E,Y,Role,1)]),app(F,E))))))))
+                                    app(S,lam(E,merge(B2:drs([],[B2:[]:role(E,Y,Role,1)]),app(F,E)))))))).
 
-semlex(Cat,Lemma,Index,Att1-Att2,Sem):-
-   member(Lemma,[the,that,this,those,these]),
+semlex(Cat,Lemma,Index,Att1-[sem:'PRX'|Att2],Sem):-
+   member(Lemma,[this,these]),
    member(Cat,[(s:X/s:X)/n,(s:X\s:X)/n]), !,
-   rel(in,Att1-Att2,Relation),
+   role(['Time'],Att1-Att2,[Role]),
    Sem = lam(P,lam(S,lam(F,alfa(def,merge(B1:drs([B1:Index:Y],[]),app(P,Y)),
-                                    app(S,lam(E,merge(B2:drs([],[B2:[]:rel(E,Y,Relation,0)]),app(F,E)))))))).
+                                    app(S,lam(E,merge(B2:drs([],[B2:[]:role(E,Y,Role,1)]),app(F,E)))))))).
 
-semlex(Cat,Lemma,Index,Att1-Att2,Sem):-
+semlex(Cat,Lemma,Index,Att1-[sem:'DST'|Att2],Sem):-
+   member(Lemma,[the,that,those]),
+   member(Cat,[(s:X/s:X)/n,(s:X\s:X)/n]), !,
+   role(['Time'],Att1-Att2,[Role]),
+   Sem = lam(P,lam(S,lam(F,alfa(def,merge(B1:drs([B1:Index:Y],[]),app(P,Y)),
+                                    app(S,lam(E,merge(B2:drs([],[B2:[]:role(E,Y,Role,1)]),app(F,E)))))))).
+
+semlex(Cat,Lemma,Index,Att1-[sem:'DEF'|Att2],Sem):-
+   member(Lemma,[the]),
+   member(Cat,[(s:X/s:X)/n,(s:X\s:X)/n]), !,
+   role(['Time'],Att1-Att2,[Role]),
+   Sem = lam(P,lam(S,lam(F,alfa(def,merge(B1:drs([B1:Index:Y],[]),app(P,Y)),
+                                    app(S,lam(E,merge(B2:drs([],[B2:[]:role(E,Y,Role,1)]),app(F,E)))))))).
+
+semlex(Cat,Lemma,Index,Att1-[sem:'AND'|Att2],Sem):-
    member(Lemma,[all,every,each,any]),
    member(Cat,[(s:X/s:X)/n,(s:X\s:X)/n]), !,
-   rel(for,Att1-Att2,Relation),
+   role(['Time'],Att1-Att2,[Role]),
    Sem = lam(P,lam(S,lam(F,B1:drs([],[B1:[]:imp(merge(B2:drs([B2:Index:Y],[]),app(P,Y)),
-                                          app(S,lam(E,merge(B3:drs([],[B3:[]:rel(E,Y,Relation,0)]),app(F,E)))))])))).
+                                          app(S,lam(E,merge(B3:drs([],[B3:[]:role(E,Y,Role,1)]),app(F,E)))))])))).
 
-semlex(Cat,_Sym,Index,Att1-Att2,Sem):-
+semlex(Cat,_Sym,Index,Att1-[sem:'DIS'|Att2],Sem):-
    member(Cat,[(s:X/s:X)/n,
                (s:X\s:X)/n]), !,
    rel(for,Att1-Att2,Relation),
@@ -2942,23 +2868,23 @@ semlex(Cat,no,Index,Att1-[sem:'NOT'|Att2],Sem):-
    Sem = lam(N,lam(V,lam(Q,lam(F,app(app(V,Q),lam(E,B1:drs([],[B1:Index:not(merge(B2:drs([B2:Index:Y],[B2:[]:rel(E,Y,Relation,0)]),
                                                                             merge(app(N,Y),app(F,E))))]))))))).
 
-semlex(Cat,Sym,Index,Att1-Att2,Sem):-
+semlex(Cat,Sym,Index,Att1-[sem:'MOY'|Att2],Sem):-
    att(Att1,pos,'NNP'),
    att(Att1,namex,NE), neClass(NE,tim),
    member(Cat,[((s:X\np)\(s:X\np))/n, ((s:X\np)/(s:X\np))/n]),
    month(Sym,MID), !,
-   rel(in,Att1-Att2,Relation),
+   role(['Time'],Att1-Att2,[Role]),
    Sem = lam(P,lam(V,lam(Q,lam(F,app(app(V,Q),lam(E,merge(B1:drs([B1:[]:Y],[B1:Index:timex(Y,date([]:'+',[]:'XXXX',Index:MID,[]:'XX')),
-                                                                            B1:[]:rel(E,Y,Relation,0)]),
+                                                                            B1:[]:role(E,Y,Role,1)]),
                                                           merge(app(P,Y),app(F,E))))))))).
 
-semlex(Cat,Sym,Index,Att1-Att2,Sem):-
+semlex(Cat,Sym,Index,Att1-[sem:'REL'|Att2],Sem):-
    member(Cat,[((s:X\np)\(s:X\np))/n,
                ((s:X\np)/(s:X\np))/n]), !,
    att(Att1,sense,Sense),
-   rel(in,Att1-Att2,Relation),
+   role(['Time'],Att1-Att2,[Role]),
    Sem = lam(P,lam(V,lam(Q,lam(F,app(app(V,Q),lam(E,merge(B:drs([B:[]:Y],[B:Index:pred(Y,Sym,n,Sense),
-                                                                          B:[]:rel(E,Y,Relation,0)]),
+                                                                          B:[]:role(E,Y,Role,1)]),
                                                           merge(app(P,Y),app(F,E))))))))).
 
 
