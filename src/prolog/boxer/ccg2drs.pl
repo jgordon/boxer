@@ -1,11 +1,11 @@
 
-:- module(ccg2drs,[ccg2drs/3,base/4,gen/4]).
+:- module(ccg2drs,[ccg2drs/2,base/4,gen/4]).
 
 :- use_module(library(lists),[member/2,select/3,append/3]).
 
 :- use_module(boxer(slashes)).
 :- use_module(boxer(betaConversionDRT),[betaConvert/2]).
-:- use_module(boxer(resolveDRT),[resolveDrs/1]).
+:- use_module(boxer(resolveDRT),[resolveDRS/2]).
 %:-use_module(boxer(vpe),[resolveVPE/2]).
 :- use_module(boxer(transform),[preprocess/6,topcat/2,topatt/2,topsem/2,topstr/2]).
 :- use_module(boxer(relation),[resolve_relations/2]).
@@ -33,40 +33,39 @@
    Main Predicate
 ========================================================================= */
 
-ccg2drs(L,Ders,_):-
+ccg2drs(L,Ders):-
    option('--semantics',der), !,
    ccg2ders(L,Ders,1).
 
-ccg2drs([C|L],XDRS,Context):-
-   build(C,DRS,Tags,1,Index,_),
-   resolveDrs(DRS), !,
+ccg2drs([CCG|L],XDRS):-
+   build(CCG,DRS,Tags,1,Index), !,
    incAttempted, incCompleted,
-   ccg2drss(L,Tags,DRS,Context,XDRS,Index).
+   ccg2drss(L,Tags,DRS,XDRS,Index).
 
-ccg2drs([C|L],XDRS,Context):-
+ccg2drs([CCG|L],XDRS):-
    incAttempted,
-   noanalysis(C),
-   ccg2drs(L,XDRS,Context).
+   noanalysis(CCG),
+   ccg2drs(L,XDRS).
 
 
 /* =========================================================================
    Build rest of underspecified Semantic Representations
 ========================================================================= */
 
-ccg2drss([],Tags-[],PDRS,_,xdrs(Tags,Sem),_):- !,
+ccg2drss([],Tags-[],PDRS,xdrs(Tags,Sem),_):-
+   resolveDRS(PDRS,Tags-[]), !,
    semantics(PDRS,Tags,Sem).
 
-ccg2drss([C|L],Tags1-Tags2,PrevDRS,Context,XDRS,Index):-
-   build(C,DRS,Tags2-Tags3,Index,NewIndex,_),
-   insertDRS(PrevDRS,DRS,NewDRS),
-   resolveDrs(NewDRS),    !,
+ccg2drss([CCG|L],Tags1-Tags2,PrevDRS,XDRS,Index):-
+   build(CCG,DRS,Tags2-Tags3,Index,NewIndex),
+   insertDRS(PrevDRS,DRS,NewDRS), !,
    incAttempted, incCompleted,
-   ccg2drss(L,Tags1-Tags3,NewDRS,Context,XDRS,NewIndex).
+   ccg2drss(L,Tags1-Tags3,NewDRS,XDRS,NewIndex).
 
-ccg2drss([C|L],Tags,PDRS,Context,XDRS,Index):-
+ccg2drss([CCG|L],Tags,PDRS,XDRS,Index):-
    incAttempted,
-   noanalysis(C),
-   ccg2drss(L,Tags,PDRS,Context,XDRS,Index).
+   noanalysis(CCG),
+   ccg2drss(L,Tags,PDRS,XDRS,Index).
 
 
 /* =========================================================================
@@ -128,10 +127,11 @@ insertDRS(Old,New,SDRS):-
    Build one DRS for derivation N
 ========================================================================= */
 
-build(N,UDRS,Tags,Start,End,der(N,Der)):-
+build(N,UDRS,Tags,Start,End):-
    preferred(N,CCG0),
    preprocess(N,CCG0,CCG1,Tags,Start,End),
-   interpret(CCG1,Der),
+   resolve_relations(CCG1,CCG2),
+   interpret(CCG2,Der),
    topsem(Der,Sem),
    topcat(Der,Cat),
 %  topstr(Der,Words), write(Words), nl,
