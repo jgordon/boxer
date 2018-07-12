@@ -17,7 +17,7 @@ file_search_path(lex,        'src/prolog/boxer/lex').
 
 :- use_module(library(lists),[member/2,select/3]).
 
-:- use_module(boxer(ccg2drs),[ccg2drs/3]).
+:- use_module(boxer(ccg2drs),[ccg2drs/2]).
 :- use_module(boxer(input),[openInput/0,identifyIDs/1,preferred/2]).
 :- use_module(boxer(evaluation),[initEval/0,reportEval/0]).
 :- use_module(boxer(version),[version/1]).
@@ -34,13 +34,13 @@ file_search_path(lex,        'src/prolog/boxer/lex').
 /*========================================================================
    Load Knowledge
 
-loadRelations:- 
-   option('--nn',true), !, 
+loadRelations:-
+   option('--nn',true), !,
    use_module(knowledge(relations),[nn/3]).
 
 loadRelations.
 
-loadKnowledge:- 
+loadKnowledge:-
    loadRelations.
 ========================================================================*/
 
@@ -50,8 +50,8 @@ loadKnowledge:-
 ========================================================================*/
 
 box(_,_):-
-   option(Option,do), 
-   member(Option,['--version','--help']), !, 
+   option(Option,do),
+   member(Option,['--version','--help']), !,
    version,
    help.
 
@@ -66,7 +66,7 @@ box(Command,Options):-
    printFooter(Stream),
    close(Stream), !,
    reportEval.
-   
+
 box(_,_):-
    setOption(boxer,'--help',do), !,
    help.
@@ -91,8 +91,8 @@ box(_):-
 
 openOutput(Stream):-
    option('--output',Output),
-   atomic(Output), 
-   \+ Output=user_output, 
+   atomic(Output),
+   \+ Output=user_output,
    ( access_file(Output,write), !,
      open(Output,write,Stream,[encoding(utf8)])
    ; error('cannot write to specified file ~p',[Output]),
@@ -102,87 +102,40 @@ openOutput(user_output).
 
 
 /*------------------------------------------------------------------------
-   Context Parameters
-------------------------------------------------------------------------*/
-
-contextParameters([],_,[]):- !.
-
-contextParameters(L1,Old,L3):- 
-   select(poss(Pos),L1,L2), !,
-   contextParameters(L2,[poss(Pos)|Old],L3).
-
-contextParameters(['DOCID':DOCID|L1],Pos,[year:Year,month:Month,day:Day|L2]):- 
-   atom_chars(DOCID,Chars),
-   ( Chars = [_,_,_,'_','E','N','G','_',Y1,Y2,Y3,Y4,M1,M2,D1,D2,'.'|_]
-   ; Chars = ['d','i','r','_',Y1,Y2,Y3,Y4,M1,M2,D1,D2|_]
-   ; Chars = ['A','P','W',Y1,Y2,Y3,Y4,M1,M2,D1,D2|_]
-   ; Chars = ['N','Y','T',Y1,Y2,Y3,Y4,M1,M2,D1,D2|_]
-   ; Chars = ['X','I','E',Y1,Y2,Y3,Y4,M1,M2,D1,D2|_] ), !,
-   atom_chars(Year,[Y1,Y2,Y3,Y4]), 
-   atom_chars(Month,[M1,M2]), 
-   atom_chars(Day,[D1,D2]), !,
-   contextParameters(L1,Pos,L2).
-
-contextParameters([role(A,B1,C1)|L1],Pos,[role(A,B2,C2)|L2]):- !,
-   correct(Pos,B1,B2),
-   correct(Pos,C1,C2),
-   contextParameters(L1,Pos,L2).
-
-contextParameters([target(A,B1,C1)|L1],Pos,[target(A,B2,C2)|L2]):- !,
-   correct(Pos,B1,B2),
-   correct(Pos,C1,C2),
-   contextParameters(L1,Pos,L2).
-
-contextParameters([_|L1],Pos,L2):- !,
-   contextParameters(L1,Pos,L2).
-
-contextParameters(_,_,[]).
-
-
-correct([],N,N).
-
-correct([poss(X)|L],N1,N3):-
-   (X < N1, !, N2 is N1 + 1; N2 = N1),
-   correct(L,N2,N3).
-
-
-
-/*------------------------------------------------------------------------
    Print CCG derivations
 ------------------------------------------------------------------------*/
 
 printCCGs([],_).
 
-printCCGs([N|L],Stream):-  
+printCCGs([N|L],Stream):-
    preferred(N,CCG0),
    preprocess(N,CCG0,CCG1,_,1,_), !,
-   printCCG(CCG1,Stream), 
+   printCCG(CCG1,Stream),
    printCCGs(L,Stream).
 
-printCCGs([N|L],Stream):-  
+printCCGs([N|L],Stream):-
    preferred(N,_), !,
    warning('cannot produce derivation for ~p',[N]),
    printCCGs(L,Stream).
 
-printCCGs([N|L],Stream):-  
+printCCGs([N|L],Stream):-
    warning('no syntactic analysis for ~p',[N]),
    printCCGs(L,Stream).
 
 
 /*------------------------------------------------------------------------
-   Build a DRS from a list of identifiers 
+   Build a DRS from a list of identifiers
 ------------------------------------------------------------------------*/
 
-buildList([id(_,Numbers)|L],Index,Stream):- 
+buildList([id(_,Numbers)|L],Index,Stream):-
    option('--ccg',true), !,
    sort(Numbers,Sorted),
    printCCGs(Sorted,Stream),
    buildList(L,Index,Stream).
 
-buildList([id(Id,Numbers)|L],Index,Stream):- 
+buildList([id(Id,Numbers)|L],Index,Stream):-
    sort(Numbers,Sorted),
-   contextParameters(Id,[],Context),
-   ccg2drs(Sorted,XDRS,Context),
+   ccg2drs(Sorted,XDRS),
    outputSem(Stream,Id,Index,XDRS), !,
    NewIndex is Index + 1,
    buildList(L,NewIndex,Stream).
@@ -236,13 +189,11 @@ help:-
 start:-
    current_prolog_flag(argv,[Comm|Args]),
 %  set_prolog_flag(float_format,'%.20g'),
-   setDefaultOptions(boxer), 
+   setDefaultOptions(boxer),
    parseOptions(boxer,Args),
    box(Comm,Args), !,
    halt.
 
-start:- 
-   error('boxer failed',[]), 
+start:-
+   error('boxer failed',[]),
    halt.
-
-

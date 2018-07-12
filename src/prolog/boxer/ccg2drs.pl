@@ -1,11 +1,11 @@
 
-:- module(ccg2drs,[ccg2drs/3,base/4,gen/4]).
+:- module(ccg2drs,[ccg2drs/2,base/4,gen/4]).
 
 :- use_module(library(lists),[member/2,select/3,append/3]).
 
 :- use_module(boxer(slashes)).
 :- use_module(boxer(betaConversionDRT),[betaConvert/2]).
-:- use_module(boxer(resolveDRT),[resolveDrs/1]).
+:- use_module(boxer(resolveDRT),[resolveDRS/2]).
 %:-use_module(boxer(vpe),[resolveVPE/2]).
 :- use_module(boxer(transform),[preprocess/6,topcat/2,topatt/2,topsem/2,topstr/2]).
 :- use_module(boxer(relation),[resolve_relations/2]).
@@ -33,40 +33,39 @@
    Main Predicate
 ========================================================================= */
 
-ccg2drs(L,Ders,_):-
+ccg2drs(L,Ders):-
    option('--semantics',der), !,
    ccg2ders(L,Ders,1).
 
-ccg2drs([C|L],XDRS,Context):-
-   build(C,DRS,Tags,1,Index,_),
-   resolveDrs(DRS), !,
+ccg2drs([CCG|L],XDRS):-
+   build(CCG,DRS,Tags,1,Index), !,
    incAttempted, incCompleted,
-   ccg2drss(L,Tags,DRS,Context,XDRS,Index).
+   ccg2drss(L,Tags,DRS,XDRS,Index).
 
-ccg2drs([C|L],XDRS,Context):-
+ccg2drs([CCG|L],XDRS):-
    incAttempted,
-   noanalysis(C),
-   ccg2drs(L,XDRS,Context).
+   noanalysis(CCG),
+   ccg2drs(L,XDRS).
 
 
 /* =========================================================================
    Build rest of underspecified Semantic Representations
 ========================================================================= */
 
-ccg2drss([],Tags-[],PDRS,_,xdrs(Tags,Sem),_):- !,
+ccg2drss([],Tags-[],PDRS,xdrs(Tags,Sem),_):-
+   resolveDRS(PDRS,Tags-[]), !,
    semantics(PDRS,Tags,Sem).
 
-ccg2drss([C|L],Tags1-Tags2,PrevDRS,Context,XDRS,Index):-
-   build(C,DRS,Tags2-Tags3,Index,NewIndex,_),
-   insertDRS(PrevDRS,DRS,NewDRS),
-   resolveDrs(NewDRS),    !,
+ccg2drss([CCG|L],Tags1-Tags2,PrevDRS,XDRS,Index):-
+   build(CCG,DRS,Tags2-Tags3,Index,NewIndex),
+   insertDRS(PrevDRS,DRS,NewDRS), !,
    incAttempted, incCompleted,
-   ccg2drss(L,Tags1-Tags3,NewDRS,Context,XDRS,NewIndex).
+   ccg2drss(L,Tags1-Tags3,NewDRS,XDRS,NewIndex).
 
-ccg2drss([C|L],Tags,PDRS,Context,XDRS,Index):-
+ccg2drss([CCG|L],Tags,PDRS,XDRS,Index):-
    incAttempted,
-   noanalysis(C),
-   ccg2drss(L,Tags,PDRS,Context,XDRS,Index).
+   noanalysis(CCG),
+   ccg2drss(L,Tags,PDRS,XDRS,Index).
 
 
 /* =========================================================================
@@ -94,7 +93,8 @@ ccg2ders([C|L],Ders,Index):-
 ccg2der(N,der(N,Der),Start,End):-
    preferred(N,CCG0),
    preprocess(N,CCG0,CCG1,_Tags,Start,End),
-   interpretDer(CCG1,Der).
+   resolve_relations(CCG1,CCG2),
+   interpretDer(CCG2,Der).
 
 interpretDer(CCG,Copy):-
    interpret(CCG,Der),
@@ -107,29 +107,31 @@ interpretDer(CCG,CCG).
    Insert DRS
 ========================================================================= */
 
-insertDRS(merge(B1,B2),New,merge(B1,B3)):-
+insertDRS(merge(B1,B2),New,Merge):-
    option('--theory',drt), !,
-   insertDRS(B2,New,B3).
+   insertDRS(B2,New,B3),
+   Merge = merge(B1,B3).
 
-insertDRS(Old,New,B):-
+insertDRS(Old,New,Merge):-
    option('--theory',drt), !,
-   B = merge(Old,New).
+   Merge = merge(Old,New).
 
-insertDRS(Old,New,B):-
+insertDRS(Old,New,SDRS):-
    option('--theory',sdrt), !,
    Rel = continuation,
 %  Rel = elaboration,
-   mergeSDRS(smerge(Old,New,Rel,[]),B).
+   mergeSDRS(smerge(Old,New,Rel,[]),SDRS).
 
 
 /* =========================================================================
    Build one DRS for derivation N
 ========================================================================= */
 
-build(N,UDRS,Tags,Start,End,der(N,Der)):-
+build(N,UDRS,Tags,Start,End):-
    preferred(N,CCG0),
    preprocess(N,CCG0,CCG1,Tags,Start,End),
-   interpret(CCG1,Der),
+   resolve_relations(CCG1,CCG2),
+   interpret(CCG2,Der),
    topsem(Der,Sem),
    topcat(Der,Cat),
 %  topstr(Der,Words), write(Words), nl,
@@ -150,8 +152,198 @@ noanalysis(N):-
 
 
 /* =========================================================================
+   Make Equivalence Classes (reference resolution)
+========================================================================= */
+
+addEquivClass(I,X,E1-E3):-
+   select(X:C1,E1,E2), !,
+   append(I,C1,C2),
+   E3 = [X:C2|E2].
+
+addEquivClass(I,X,E1-E2):-
+   E2 = [X:I|E1].
+
+
+/* =========================================================================
+   Equivalence Classes (reference resolution)
+========================================================================= */
+
+equivalenceClasses(sdrs([],_),E-E):- !.
+
+equivalenceClasses(sdrs([B|L],C),E1-E3):- !,
+   equivalenceClasses(B,E1-E2),
+   equivalenceClasses(sdrs(L,C),E2-E3).
+
+equivalenceClasses(merge(B1,B2),E1-E3):- !,
+   equivalenceClasses(B1,E1-E2),
+   equivalenceClasses(B2,E2-E3).
+
+equivalenceClasses(lab(_,B),E1-E2):- !,
+   equivalenceClasses(B,E1-E2).
+
+equivalenceClasses(sub(B1,B2),E1-E3):- !,
+   equivalenceClasses(B1,E1-E2),
+   equivalenceClasses(B2,E2-E3).
+
+equivalenceClasses(_:drs([],[]),E-E):- !.
+
+equivalenceClasses(B:drs([],[_:I:pred(X,_,_,_)|C]),E1-E3):- !,
+   addEquivClass(I,X,E1-E2),
+   equivalenceClasses(B:drs([],C),E2-E3).
+
+equivalenceClasses(B:drs([],[_:I:named(X,_,_,_)|C]),E1-E3):- !,
+   addEquivClass(I,X,E1-E2),
+   equivalenceClasses(B:drs([],C),E2-E3).
+
+equivalenceClasses(B:drs([],[_:I:timex(X,_)|C]),E1-E3):- !,
+   addEquivClass(I,X,E1-E2),
+   equivalenceClasses(B:drs([],C),E2-E3).
+
+equivalenceClasses(B:drs([],[_:I:card(X,_,_)|C]),E1-E3):- !,
+   addEquivClass(I,X,E1-E2),
+   equivalenceClasses(B:drs([],C),E2-E3).
+
+equivalenceClasses(B:drs([],[_:_:rel(_,_,_,_)|C]),E1-E2):- !,
+   equivalenceClasses(B:drs([],C),E1-E2).
+
+equivalenceClasses(B:drs([],[_:_:role(_,_,_,_)|C]),E1-E2):- !,
+   equivalenceClasses(B:drs([],C),E1-E2).
+
+equivalenceClasses(B:drs([],[_:_:eq(_,_)|C]),E1-E2):- !,
+   equivalenceClasses(B:drs([],C),E1-E2).
+
+equivalenceClasses(B:drs([],[_:_:not(DRS)|C]),E1-E3):- !,
+   equivalenceClasses(DRS,E1-E2),
+   equivalenceClasses(B:drs([],C),E2-E3).
+
+equivalenceClasses(B:drs([],[_:_:pos(DRS)|C]),E1-E3):- !,
+   equivalenceClasses(DRS,E1-E2),
+   equivalenceClasses(B:drs([],C),E2-E3).
+
+equivalenceClasses(B:drs([],[_:_:nec(DRS)|C]),E1-E3):- !,
+   equivalenceClasses(DRS,E1-E2),
+   equivalenceClasses(B:drs([],C),E2-E3).
+
+equivalenceClasses(B:drs([],[_:_:prop(_,DRS)|C]),E1-E3):- !,
+   equivalenceClasses(DRS,E1-E2),
+   equivalenceClasses(B:drs([],C),E2-E3).
+
+equivalenceClasses(B:drs([],[_:_:imp(DRS1,DRS2)|C]),E1-E4):- !,
+   equivalenceClasses(DRS1,E1-E2),
+   equivalenceClasses(DRS2,E2-E3),
+   equivalenceClasses(B:drs([],C),E3-E4).
+
+equivalenceClasses(B:drs([],[_:_:or(DRS1,DRS2)|C]),E1-E4):- !,
+   equivalenceClasses(DRS1,E1-E2),
+   equivalenceClasses(DRS2,E2-E3),
+   equivalenceClasses(B:drs([],C),E3-E4).
+
+equivalenceClasses(B:drs([],[_:_:duplex(_,DRS1,_,DRS2)|C]),E1-E4):- !,
+   equivalenceClasses(DRS1,E1-E2),
+   equivalenceClasses(DRS2,E2-E3),
+   equivalenceClasses(B:drs([],C),E3-E4).
+
+equivalenceClasses(B:drs([],[C|Conds]),E1-E2):- !,
+   warning('condition not known in equivalenceClasses/2: ~p',[C]),
+   equivalenceClasses(B:drs([],Conds),E1-E2).
+
+equivalenceClasses(B:drs([_:I:X|D],C),E1-E3):- !,
+   addEquivClass(I,X,E1-E2),
+   equivalenceClasses(B:drs(D,C),E2-E3).
+
+equivalenceClasses(B,E-E):-
+   warning('expression not known in equivalenceClasses/2: ~p',[B]).
+
+
+/* =========================================================================
+   Clean up Equivalence Classes (reference resolution)
+========================================================================= */
+
+cleanEquivClasses([],[]).
+
+cleanEquivClasses([_:[]|L1],L2):- !,
+   cleanEquivClasses(L1,L2).
+
+cleanEquivClasses([_:[_]|L1],L2):- !,
+   cleanEquivClasses(L1,L2).
+
+cleanEquivClasses([X:C1|L1],[X:C2|L2]):- !,
+   sort(C1,C2),
+   cleanEquivClasses(L1,L2).
+
+
+/* =========================================================================
+   Produce Reference Resolution
+========================================================================= */
+
+writeECs([],_):- nl.
+writeECs([I:X|L],T):-
+   write(I), write(': ['), writeEC(X,T), write('] '),
+   writeECs(L,T).
+
+writeEC([],_).
+writeEC([X|L],T):-
+   member(X:F,T), member(tok:Tok,F), !,
+   write(Tok),
+   (L=[];L=[_|_],write(',')),
+   writeEC(L,T).
+writeEC([_|L],T):-
+   writeEC(L,T).
+
+
+evaluate(Es,_Tags):-
+%  write('equivalent: '), writeECs(Es,Tags),
+   setof(ant(A,B),R^(resolveDRT:antecedent([A|R],B)),L), !,
+   evaluate(L,Es,0,0,0).
+
+evaluate(_,_).
+
+evaluate([],_,Correct,_TotalAttempted,Total):-
+   Correct < Total, !,
+   warning('not all gold standard antecedents found, but only: ~p/~p',[Correct,Total]),
+   true.
+%   format('precision: ~p/~p~n',[Correct,TotalAttempted]),
+%   format('recall: ~p/~p~n',[Correct,Total]).
+
+
+evaluate([],_,_Correct,_TotalAttempted,_Total):- !,
+   true.
+%   format('precision: ~p/~p~n',[Correct,TotalAttempted]),
+%   format('recall: ~p/~p~n',[Correct,Total]).
+
+evaluate([ant(A,B)|L],Es,C1,TA1,TT1):-
+   member(_:E,Es),
+   member(A,E),
+   member(B,E), !,
+   C2 is C1 + 1,
+   TA2 is TA1 + 1,
+   TT2 is TT1 + 1,
+   evaluate(L,Es,C2,TA2,TT2).
+
+evaluate([ant(A,_)|L],Es,C,TA1,TT1):-
+   member(_:E,Es),
+   member(A,E), !,
+   TA2 is TA1 + 1,
+   TT2 is TT1 + 1,
+   evaluate(L,Es,C,TA2,TT2).
+
+evaluate([_|L],Es,C,TA,TT1):-
+   TT2 is TT1 + 1,
+   evaluate(L,Es,C,TA,TT2).
+
+
+/* =========================================================================
    Produce Semantic Representation
 ========================================================================= */
+
+semantics(X,Tags,Y):-
+   option('--instantiate',true),
+   option('--semantics',  pdrs),
+   option('--resolve',    true), !,
+   instDrs(X), Y=X,
+   equivalenceClasses(Y,[]-E1),
+   cleanEquivClasses(E1,E2),
+   evaluate(E2,Tags).
 
 semantics(X,_,Y):-
    option('--instantiate',true),
