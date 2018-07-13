@@ -993,41 +993,6 @@ semlex(Cat,Sym,Index,Att,Sem):- semlex_verb(Cat,Sym,Index,Att,Sem), !.
 ========================================================================= */
 
 /* -------------------------------------------------------------------------
-   Wrongly Classified Adjectives + "own"
-------------------------------------------------------------------------- */
-
-semlex(n/n,Sym,_Index,Att-Att,Sem):-
-   member(Sym,[one,few]),
-   option('--x',true), !,
-   Sem = lam(P,lam(X,app(P,X))).
-
-semlex(Cat,many,Index,Att-Att,Sem):-
-   category(adj,Cat,_), !,
-   Sem = lam(P,lam(X,merge(B:drs([],[B:Index:pred(X,quantity,n,1)]),app(P,X)))).
-
-semlex(Cat,much,Index,Att-Att,Sem):-
-   category(adj,Cat,_), !,
-   Sem = lam(P,lam(X,merge(B:drs([],[B:Index:pred(X,amount,n,3)]),app(P,X)))).
-
-semlex(n/n,only,Index,Att-Att,Sem):- !,
-   Sem = lam(P,lam(X,merge(app(P,X),B1:drs([],[B1:[]:imp(merge(B2:drs([B2:Index:Y],[]),app(P,Y)),B3:drs([],[B3:[]:eq(X,Y)]))])))).
-
-
-/* -------------------------------------------------------------------------
-   Presuppositional Adjectives
-------------------------------------------------------------------------- */
-
-semlex(Cat,Sym,Index,Att-Att,Sem):-
-   \+ option('--semantics',drg),
-   member(Sym,[other,previous,different]),
-   category(adj,Cat,_), !,
-   Sem = lam(P,lam(X,merge(app(P,X),
-                           alfa(def,
-                                merge(B1:drs([B1:[]:Y],[]),app(P,Y)),
-                                      B2:drs([],[B2:[]:not(B3:drs([],[B3:Index:eq(X,Y)]))]))))).
-
-
-/* -------------------------------------------------------------------------
    Present participles, Gerunds
 ------------------------------------------------------------------------- */
 
@@ -1147,20 +1112,6 @@ semlex(Cat,Sym,Index,Att-Att,Sem):-
 
 
 /* -------------------------------------------------------------------------
-   Singular Superlatives
-------------------------------------------------------------------------- */
-
-semlex(Cat,Sym,Index,Att-Att,Sem):-
-   \+ option('--semantics',drg),
-   att(Att,pos,'JJS'),
-   category(adj,Cat,_), !,
-   Sem = lam(P,lam(X,merge(app(P,X),
-                           B1:drs([],[B1:[]:imp(merge(B2:drs([B2:[]:Y],[B2:[]:not(B3:drs([],[B3:[]:eq(X,Y)]))]),
-                                                      app(P,Y)),
-                                                B4:drs([],[B4:Index:rel(X,Y,Sym,0)]))])))).
-
-
-/* -------------------------------------------------------------------------
    Cardinal Adjectives
 ------------------------------------------------------------------------- */
 
@@ -1171,25 +1122,6 @@ semlex(n/n,Sym,Index,Att-Att,Sem):-
 semlex(n\n,Sym,Index,Att-Att,Sem):-
    string2digit(Sym,Digit), !,
    Sem = lam(P,lam(X,merge(app(P,X),B:drs([],[B:Index:card(X,Digit,eq)])))).
-
-
-/* -------------------------------------------------------------------------
-   Composite Adjectives:  10-hour story
-
-semlex(Cat,Sym,Index,Att1-Att2,Sem):-
-   category(adj,Cat,_),
-   atomic_list_concat([Prefix,Suffix],'-',Sym),
-   member(Suffix,[acre,year,yard,foot,pound,day,minute,page,point,man,inch,
-                  degree,week,member,mile,week,km,dollar,kilometer,
-                  'square-foot',seat,meter,story,hour,time,ton,month]),
-   string2digit(Prefix,Number), !,
-   att(Att1,sense,Sense),
-   rel(Suffix,Att1-Att2,Relation),
-   Sem = lam(P,lam(X,merge(B:drs([B:[]:Y],
-                                 [B:[]:card(Y,Number,eq),
-                                  B:Index:pred(Y,Suffix,n,Sense),
-                                  B:[]:rel(X,Y,Relation,0)]),app(P,X)))).
-------------------------------------------------------------------------- */
 
 
 /* -------------------------------------------------------------------------
@@ -1275,8 +1207,6 @@ semlex(Cat,Sym,Index,Att-Att,Sem):-
    Sem = lam(M,lam(P,lam(X,merge(B1:drs([B1:[]:Y],[]),
                                  merge(app(P,Y),
                                        app(app(M,lam(Q,app(Q,X))),lam(E,B:drs([],[B:Index:rel(E,Y,Sym,Sense)])))))))).
-%   closing(CC),
-%   Sem = lam(VP,lam(N,lam(X,app(app(VP,lam(P,merge(app(P,X),app(N,X)))),CC)))).
 
 % this category is sometimes assigned to opening brackets
 %
