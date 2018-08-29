@@ -25,43 +25,43 @@
 
 % Ex: a company [that is] based in ...
 %
-typechange(Old,Phi,_,New,app(Psi,Phi)):- 
-   member(Old,[s:_\np,s:_/np]), 
-   New = np\np, 
-   semlex(New/Old,that,[],[]-[],Psi), !.
+typechange(Old,Phi,_,New,app(Psi,Phi)):-
+   member(Old,[s:_\np,s:_/np]),
+   New = np\np,
+   semlex(New/Old,that,[],[]-_,Psi), !.
 
 % Ex: an effort [ ... ] to end the violence
 %
-typechange(Old,Phi,_,New,app(Psi,Phi)):- 
-   member(Old,[s:_\np,s:_/np]), 
-   member(New,[n/n,n\n]), 
-   semlex(New/Old,that,[],[]-[],Psi), !.
+typechange(Old,Phi,_,New,app(Psi,Phi)):-
+   member(Old,[s:_\np,s:_/np]),
+   member(New,[n/n,n\n]),
+   semlex(New/Old,that,[],[]-_,Psi), !.
 
-% Ex: a sign [that] the effort is working 
-% 
-typechange(Old,Phi,_,New,app(Psi,Phi)):- 
-   Old = s:_,
-   New = np\np, 
-   semlex(New/Old,that,[],[]-[],Psi), !.
-
-% Ex: sign [that] the effort is working 
+% Ex: a sign [that] the effort is working
 %
-typechange(Old,Phi,_,New,app(Psi,Phi)):- 
+typechange(Old,Phi,_,New,app(Psi,Phi)):-
    Old = s:_,
-   New = n\n, 
-   semlex(New/Old,that,[],[]-[],Psi), !.
+   New = np\np,
+   semlex(New/Old,that,[],[]-_,Psi), !.
+
+% Ex: sign [that] the effort is working
+%
+typechange(Old,Phi,_,New,app(Psi,Phi)):-
+   Old = s:_,
+   New = n\n,
+   semlex(New/Old,that,[],[]-_,Psi), !.
 
 % <example missing>
 %
 typechange(Old/np,Phi,_,New,app(Psi,app(Phi,NP))):-
-   member(Old,[s:_\np,s:_/np]), 
+   member(Old,[s:_\np,s:_/np]),
    member(New,[np/np,np\np]),
    semlex(New/Old,empty,[],[]-[],Psi), !,
    NP = lam(P,merge(B:drs([B:[]:X],[B:[]:pred(X,thing,n,12)]),app(P,X))).
 
 % Ex: walking [in order] to get fit
 %
-typechange(Old,Phi,_,New,app(Psi,Phi)):- 
+typechange(Old,Phi,_,New,app(Psi,Phi)):-
    Old = s:_\np,
    member(New,[(s:X\np)\(s:X\np), (s:X\np)/(s:X\np)]),
    semlex(New/Old,for,[],[]-[],Psi), !.
@@ -76,8 +76,8 @@ typechange(Old,Phi,_,New,app(Psi,Phi)):-
 %
 typechange(Old,Phi,Att,New,app(Psi,Phi)):-
    Old = n, New = np,
-   att(Att,pos,POS), 
-   member(POS,['NNP','NNPS']), 
+   att(Att,pos,POS),
+   member(POS,['NNP','NNPS']),
    semlex(New/Old,the,[],[]-[],Psi), !.
 
 % Ex: [some] men
@@ -89,7 +89,7 @@ typechange(Old,Phi,_,New,app(Psi,Phi)):-
 % Ex: there is hope [and] the rain will end
 %
 typechange(Old,Phi,_,New,app(Psi,Phi)):-
-   Old = s:_, 
+   Old = s:_,
    member(New,[s:X\s:X,s:X/s:X]),
    semlex(New/Old,and,[],[]-[],Psi), !.
 
@@ -97,14 +97,14 @@ typechange(Old,Phi,_,New,app(Psi,Phi)):-
 %
 typechange(Old,Phi,_,New,app(Psi,Phi)):-
    Old = (s:ng\np),
-   New = np, !, 
+   New = np, !,
    Psi = lam(VP,lam(F,app(app(VP,lam(P,merge(B:drs([B:[]:X],[B:[]:pred(X,thing,n,12)]),
                                              app(P,X)))),lam(E,app(F,E))))).
 
 % Ex: [while] regarded as the winner John lost the game
 %
 typechange(Old,Phi,_,New,app(Psi,Phi)):-
-   Old = s:_\np, 
+   Old = s:_\np,
    member(New,[s:X/s:X,s:X\s:X]),
    semlex(New/Old,while,[],[]-[],Psi), !.
 
@@ -120,7 +120,7 @@ typechange(Old,Phi,_,New,app(Psi,Phi)):-
 %typechange(np,Phi,_,(s:X\np)\(s:X\np),app(New,Phi)):- !,
 %   New = lam(Old,lam(V,lam(N,lam(E,app(app(V,N),lam(X,merge(app(Old,lam(Y,B:drs([],[B:[]:rel(X,Y,rel,0)]))),app(E,X)))))))).
 
-%typechange((s:dcl/s:dcl),Old,_,Mod,app(New,Old)):- 
+%typechange((s:dcl/s:dcl),Old,_,Mod,app(New,Old)):-
 %   member(Mod,[(s:X\np)\(s:X\np),(s:X\np)/(s:X\np)]), !,
 %   New = lam(Old,lam(V,lam(N,app(Old,app(V,N))))).
 

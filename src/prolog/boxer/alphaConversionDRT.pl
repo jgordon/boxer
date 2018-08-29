@@ -63,14 +63,14 @@ alphaConvertDRS(X1,Var-Var,Ptr-Ptr,X2):-
 alphaConvertDRS(lam(X,B1),Vars-Vars,Ptrs,lam(Y,B2)):- !,
    alphaConvertDRS(B1,[sub(X,Y)|Vars]-_,Ptrs,B2).
 
-alphaConvertDRS(B1:drs(D,C),Vars,Ptr1-Ptr2,B2:Drs):- !, 
+alphaConvertDRS(B1:drs(D,C),Vars,Ptr1-Ptr2,B2:Drs):- !,
    alphaConvertDRS(drs(D,C),Vars,[sub(B1,B2)|Ptr1]-Ptr2,Drs).
 
 alphaConvertDRS(drs([],[]),Vars-Vars,Ptr-Ptr,drs([],[])):- !.
 
 alphaConvertDRS(drs([],[B1:I:C1|Conds1]),Vars1-Vars2,Ptr1-Ptr3,drs([],[B2:I:C2|Conds2])):- !,
    alphaConvertVar(B1,Ptr1,B2),
-   alphaConvertCondition(C1,Vars1,Ptr1-Ptr2,C2), 
+   alphaConvertCondition(C1,Vars1,Ptr1-Ptr2,C2),
    alphaConvertDRS(drs([],Conds1),Vars1-Vars2,Ptr2-Ptr3,drs([],Conds2)).
 
 alphaConvertDRS(drs([B1:I:Ref|L1],C1),Var1-Var2,Ptr1-Ptr2,drs([B2:I:New|L2],C2)):- !,
