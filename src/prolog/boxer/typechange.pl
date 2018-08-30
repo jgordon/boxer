@@ -70,7 +70,7 @@ typechange(Old,Phi,_,New,app(Psi,Phi)):-
 %
 typechange(Old,Phi,_,New,app(Psi,Phi)):-
    Old = n, New = pn,                     %%% preserved for Kilian
-   semlex(New/Old,the,[],[]-[],Psi), !.
+   semlex(New/Old,the,[],[]-_,Psi), !.
 
 % Ex: [the] men
 %
@@ -78,7 +78,7 @@ typechange(Old,Phi,Att,New,app(Psi,Phi)):-
    Old = n, New = np,
    att(Att,pos,POS),
    member(POS,['NNP','NNPS']),
-   semlex(New/Old,the,[],[]-[],Psi), !.
+   semlex(New/Old,the,[],[]-_,Psi), !.
 
 % Ex: [some] men
 %
