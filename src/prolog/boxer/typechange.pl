@@ -64,7 +64,7 @@ typechange(Old/np,Phi,_,New,app(Psi,app(Phi,NP))):-
 typechange(Old,Phi,_,New,app(Psi,Phi)):-
    Old = s:_\np,
    member(New,[(s:X\np)\(s:X\np), (s:X\np)/(s:X\np)]),
-   semlex(New/Old,for,[],[]-[],Psi), !.
+   semlex(New/Old,for,[],[]-_,Psi), !.
 
 % Ex: [the] man
 %
@@ -84,14 +84,14 @@ typechange(Old,Phi,Att,New,app(Psi,Phi)):-
 %
 typechange(Old,Phi,_,New,app(Psi,Phi)):-
    Old = n, New = np,
-   semlex(New/Old,some,[],[]-[],Psi), !.
+   semlex(New/Old,some,[],[]-_,Psi), !.
 
 % Ex: there is hope [and] the rain will end
 %
 typechange(Old,Phi,_,New,app(Psi,Phi)):-
    Old = s:_,
    member(New,[s:X\s:X,s:X/s:X]),
-   semlex(New/Old,and,[],[]-[],Psi), !.
+   semlex(New/Old,and,[],[]-_,Psi), !.
 
 % Ex: (they say) [the event of] running a marathon (helps)
 %
